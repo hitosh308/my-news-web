@@ -96,6 +96,36 @@ button:active {
     gap: 1.4rem;
 }
 
+.filter-close {
+    align-self: flex-end;
+    background: none;
+    color: var(--muted-text);
+    font-size: 0.9rem;
+    padding: 0;
+    display: none;
+    font-weight: 600;
+}
+
+.filter-close:hover,
+.filter-close:focus {
+    color: var(--accent-color);
+    outline: none;
+}
+
+.filter-toggle {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.filter-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 15;
+    display: none;
+}
+
 .view-list {
     display: flex;
     flex-direction: column;
@@ -198,6 +228,8 @@ button:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
     margin-bottom: 1rem;
     color: var(--muted-text);
 }
@@ -308,6 +340,10 @@ button:active {
     font-weight: 600;
 }
 
+.news-toolbar #status-text {
+    flex: 1 1 auto;
+}
+
 .settings-main {
     max-width: 960px;
     margin: 2rem auto;
@@ -351,12 +387,52 @@ button:active {
 @media (max-width: 960px) {
     .app-main {
         grid-template-columns: 1fr;
+        position: relative;
     }
 
     .filter-panel {
-        position: sticky;
-        top: 5rem;
-        z-index: 10;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(85vw, 360px);
+        max-width: 100%;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        border-radius: 0;
+        padding: 1.5rem 1.25rem 2.5rem;
+        overflow-y: auto;
+        z-index: 20;
+        box-shadow: none;
+        pointer-events: none;
+    }
+
+    body.filters-open .filter-panel {
+        transform: translateX(0);
+        box-shadow: var(--shadow);
+        pointer-events: auto;
+    }
+
+    .filter-backdrop {
+        display: none;
+    }
+
+    body.filters-open .filter-backdrop {
+        display: block;
+    }
+
+    .filter-close {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .filter-toggle {
+        display: inline-flex;
+    }
+
+    body.filters-open {
+        overflow: hidden;
     }
 }
 
@@ -371,6 +447,13 @@ button:active {
         width: 100%;
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .header-actions .ghost-button,
+    .header-actions .primary-button {
+        flex: 1 1 48%;
+        text-align: center;
     }
 
     .app-main {

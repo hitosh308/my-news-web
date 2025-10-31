@@ -56,6 +56,8 @@ function bindEvents() {
             e.target.value = '';
         }
     });
+
+    initializeFilterPanel();
 }
 
 function renderViewList() {
@@ -222,6 +224,99 @@ async function loadNews() {
         statusText.textContent = 'ニュースを取得できませんでした。設定を確認してください。';
         document.getElementById('news-grid').innerHTML = '';
     }
+}
+
+function initializeFilterPanel() {
+    const toggleFiltersButton = document.getElementById('toggle-filters');
+    const closeFiltersButton = document.getElementById('close-filters');
+    const filterBackdrop = document.getElementById('filter-backdrop');
+
+    if (toggleFiltersButton) {
+        toggleFiltersButton.addEventListener('click', () => {
+            if (document.body.classList.contains('filters-open')) {
+                closeFilters();
+            } else {
+                openFilters();
+            }
+        });
+    }
+
+    if (closeFiltersButton) {
+        closeFiltersButton.addEventListener('click', closeFilters);
+    }
+
+    if (filterBackdrop) {
+        filterBackdrop.addEventListener('click', closeFilters);
+    }
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.body.classList.contains('filters-open')) {
+            closeFilters();
+        }
+    });
+
+    const wideScreenQuery = window.matchMedia('(min-width: 961px)');
+    const handleQueryChange = () => {
+        closeFilters();
+    };
+
+    if (typeof wideScreenQuery.addEventListener === 'function') {
+        wideScreenQuery.addEventListener('change', handleQueryChange);
+    } else if (typeof wideScreenQuery.addListener === 'function') {
+        wideScreenQuery.addListener(handleQueryChange);
+    }
+
+    closeFilters();
+}
+
+function openFilters() {
+    if (!isMobileLayout()) {
+        return;
+    }
+
+    document.body.classList.add('filters-open');
+    const filterPanel = document.getElementById('filter-panel');
+    const toggleFiltersButton = document.getElementById('toggle-filters');
+    const filterBackdrop = document.getElementById('filter-backdrop');
+
+    if (filterPanel) {
+        filterPanel.setAttribute('aria-hidden', 'false');
+    }
+
+    if (toggleFiltersButton) {
+        toggleFiltersButton.setAttribute('aria-expanded', 'true');
+    }
+
+    if (filterBackdrop) {
+        filterBackdrop.hidden = false;
+    }
+}
+
+function closeFilters() {
+    document.body.classList.remove('filters-open');
+    const filterPanel = document.getElementById('filter-panel');
+    const toggleFiltersButton = document.getElementById('toggle-filters');
+    const filterBackdrop = document.getElementById('filter-backdrop');
+
+    if (toggleFiltersButton) {
+        toggleFiltersButton.setAttribute('aria-expanded', 'false');
+    }
+
+    if (filterBackdrop) {
+        filterBackdrop.hidden = true;
+    }
+
+    if (filterPanel) {
+        if (isMobileLayout()) {
+            filterPanel.setAttribute('aria-hidden', 'true');
+        } else {
+            filterPanel.removeAttribute('aria-hidden');
+        }
+    }
+}
+
+function isMobileLayout() {
+    return window.matchMedia('(max-width: 960px)').matches;
 }
 
 function renderNews() {
