@@ -1,0 +1,38 @@
+{
+  "categories": [
+    "テクノロジー",
+    "ビジネス",
+    "エンタメ",
+    "スポーツ",
+    "政治"
+  ],
+  "conditions": {
+    "keywords": ["AI", "スタートアップ", "株価"]
+  },
+  "sources": [
+    {
+      "id": "nhk",
+      "name": "NHKニュース",
+      "type": "rss",
+      "url": "https://www3.nhk.or.jp/rss/news/cat0.xml",
+      "defaultCategories": ["政治", "テクノロジー"],
+      "defaultKeywords": []
+    },
+    {
+      "id": "nikkei",
+      "name": "日本経済新聞",
+      "type": "rss",
+      "url": "https://www.nikkei.com/rss/",
+      "defaultCategories": ["ビジネス"],
+      "defaultKeywords": ["経済", "株"]
+    },
+    {
+      "id": "itmedia",
+      "name": "ITmedia",
+      "type": "rss",
+      "url": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
+      "defaultCategories": ["テクノロジー"],
+      "defaultKeywords": ["IT"]
+    }
+  ]
+}

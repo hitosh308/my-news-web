@@ -1,0 +1,353 @@
+:root {
+    --bg-color: #f4f6fb;
+    --panel-color: #ffffff;
+    --accent-color: #2f6fed;
+    --accent-light: #e5edff;
+    --text-color: #263238;
+    --muted-text: #607d8b;
+    --border-color: #d9e2ef;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    color: var(--text-color);
+    background: var(--bg-color);
+}
+
+h1, h2, h3 {
+    margin: 0 0 0.5rem;
+}
+
+p {
+    margin: 0;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.primary-button {
+    background: var(--accent-color);
+    color: #fff;
+    padding: 0.6rem 1.2rem;
+    box-shadow: var(--shadow);
+}
+
+.secondary-button {
+    background: var(--accent-light);
+    color: var(--accent-color);
+    padding: 0.45rem 1rem;
+}
+
+.ghost-button {
+    background: transparent;
+    color: var(--accent-color);
+    padding: 0.45rem 0.9rem;
+}
+
+.layout-button {
+    background: #fff;
+    color: var(--muted-text);
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--border-color);
+    margin-right: 0.5rem;
+}
+
+.layout-button.active {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2.5rem;
+    background: var(--panel-color);
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.header-title h1 {
+    font-size: 1.8rem;
+}
+
+.header-title p {
+    color: var(--muted-text);
+}
+
+.app-main {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem 2.5rem 2.5rem;
+}
+
+.filter-panel {
+    background: var(--panel-color);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.checkbox-list label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--muted-text);
+}
+
+.checkbox-list input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.keyword-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.keyword-controls input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.keyword-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--accent-light);
+    color: var(--accent-color);
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+
+.keyword-tag button {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.9rem;
+    padding: 0;
+}
+
+.news-area {
+    min-height: 70vh;
+}
+
+.news-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: var(--muted-text);
+}
+
+.news-grid {
+    display: grid;
+    gap: 1.4rem;
+}
+
+.news-grid.grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.news-grid.column {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.news-section {
+    background: var(--panel-color);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.news-section.dragging {
+    opacity: 0.6;
+    transform: scale(0.98);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header h3 {
+    font-size: 1.1rem;
+}
+
+.section-header span {
+    color: var(--muted-text);
+    font-size: 0.85rem;
+}
+
+.article-card {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.article-card:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-3px);
+}
+
+.article-card.dragging {
+    opacity: 0.6;
+    transform: scale(0.98);
+}
+
+.article-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.article-meta {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted-text);
+}
+
+.article-description {
+    font-size: 0.9rem;
+    color: var(--muted-text);
+    line-height: 1.6;
+}
+
+.article-link {
+    align-self: flex-start;
+    text-decoration: none;
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.modal-content {
+    background: #fff;
+    width: min(900px, 90vw);
+    border-radius: 20px;
+    padding: 1.8rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#config-editor {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    background: #f8fafc;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 960px) {
+    .app-main {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-panel {
+        position: sticky;
+        top: 5rem;
+        z-index: 10;
+    }
+}
+
+@media (max-width: 600px) {
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .app-main {
+        padding: 1.2rem;
+    }
+
+    .layout-toggle {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
