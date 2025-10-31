@@ -66,26 +66,20 @@ function fetchSourceItems(array $source): ?array
         return null;
     }
 
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'timeout' => 5,
-            'header' => [
-                'User-Agent: MyNewsWebAggregator/1.0'
-            ]
-        ]
-    ]);
-
-    $content = @file_get_contents($source['url'], false, $context);
-    if ($content === false) {
+    $content = fetchFeedContent($source['url']);
+    if ($content === null) {
         return null;
     }
+
+    $content = normalizeEncoding($content);
 
     libxml_use_internal_errors(true);
     $xml = simplexml_load_string($content, 'SimpleXMLElement', LIBXML_NOCDATA);
     if ($xml === false) {
+        libxml_clear_errors();
         return null;
     }
+    libxml_clear_errors();
 
     $items = [];
     $entries = $xml->channel->item ?? $xml->entry ?? [];
@@ -189,5 +183,113 @@ function extractImageFromEntry(SimpleXMLElement $entry): string
         return html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5);
     }
 
+    if (isset($namespaces['content'])) {
+        $contentNode = $entry->children($namespaces['content']);
+        if (isset($contentNode->encoded)) {
+            $encoded = (string)$contentNode->encoded;
+            if ($encoded !== '' && preg_match('/<img[^>]+src="([^"]+)"/i', $encoded, $matches)) {
+                return html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5);
+            }
+        }
+    }
+
     return '';
+}
+
+function fetchFeedContent(string $url): ?string
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: application/rss+xml, application/xml;q=0.9, */*;q=0.8',
+                'Accept-Language: ja,en;q=0.8'
+            ],
+            CURLOPT_ENCODING => ''
+        ]);
+
+        $content = curl_exec($ch);
+        if ($content === false) {
+            curl_close($ch);
+            return null;
+        }
+
+        $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($status >= 400) {
+            return null;
+        }
+
+        return $content;
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 10,
+            'header' => implode("\r\n", [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36',
+                'Accept: application/rss+xml, application/xml;q=0.9, */*;q=0.8',
+                'Accept-Language: ja,en;q=0.8',
+                'Accept-Encoding: gzip, deflate'
+            ])
+        ]
+    ]);
+
+    $handle = @fopen($url, 'rb', false, $context);
+    if ($handle === false) {
+        return null;
+    }
+
+    $content = stream_get_contents($handle);
+    $meta = stream_get_meta_data($handle);
+    fclose($handle);
+
+    if ($content === false) {
+        return null;
+    }
+
+    $headers = $meta['wrapper_data'] ?? [];
+    foreach ($headers as $header) {
+        if (stripos($header, 'Content-Encoding: gzip') !== false && function_exists('gzdecode')) {
+            $decoded = @gzdecode($content);
+            if ($decoded !== false) {
+                $content = $decoded;
+            }
+            break;
+        }
+        if (stripos($header, 'Content-Encoding: deflate') !== false) {
+            $decoded = function_exists('gzinflate') ? @gzinflate($content) : false;
+            if ($decoded === false && function_exists('gzuncompress')) {
+                $decoded = @gzuncompress($content);
+            }
+            if ($decoded !== false) {
+                $content = $decoded;
+            }
+            break;
+        }
+    }
+
+    return $content;
+}
+
+function normalizeEncoding(string $content): string
+{
+    if (preg_match('/<\?xml[^>]*encoding=["\']([^"\']+)["\']/i', $content, $matches)) {
+        $encoding = strtoupper(trim($matches[1]));
+        if ($encoding !== '' && $encoding !== 'UTF-8') {
+            $converted = @mb_convert_encoding($content, 'UTF-8', $encoding);
+            if ($converted !== false) {
+                return preg_replace('/(<\?xml[^>]*encoding=)["\'][^"\']+["\']/', '$1"UTF-8"', $converted, 1);
+            }
+        }
+    }
+
+    return $content;
 }
