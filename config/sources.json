@@ -22,7 +22,7 @@
       "id": "nikkei",
       "name": "日本経済新聞",
       "type": "rss",
-      "url": "https://www.nikkei.com/rss/",
+      "url": "https://feeds.nikkei.co.jp/rss/nikkei/news",
       "defaultCategories": ["ビジネス"],
       "defaultKeywords": ["経済", "株"]
     },
