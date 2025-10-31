@@ -66,7 +66,7 @@ function fetchSourceItems(array $source): ?array
         return null;
     }
 
-    $content = fetchFeedContent($source['url']);
+    $content = fetchFeedContent($source['url'], $source['request'] ?? []);
     if ($content === null) {
         return null;
     }
@@ -196,8 +196,28 @@ function extractImageFromEntry(SimpleXMLElement $entry): string
     return '';
 }
 
-function fetchFeedContent(string $url): ?string
+function fetchFeedContent(string $url, array $options = []): ?string
 {
+    $userAgent = $options['userAgent'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36';
+    $headers = [
+        'Accept: application/rss+xml, application/xml;q=0.9, */*;q=0.8',
+        'Accept-Language: ja,en;q=0.8'
+    ];
+
+    if (!empty($options['referer'])) {
+        $headers[] = 'Referer: ' . $options['referer'];
+    }
+
+    if (!empty($options['headers']) && is_array($options['headers'])) {
+        foreach ($options['headers'] as $header) {
+            if (is_string($header) && $header !== '') {
+                $headers[] = $header;
+            }
+        }
+    }
+
+    $content = null;
+
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -205,40 +225,49 @@ function fetchFeedContent(string $url): ?string
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36',
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/rss+xml, application/xml;q=0.9, */*;q=0.8',
-                'Accept-Language: ja,en;q=0.8'
-            ],
+            CURLOPT_USERAGENT => $userAgent,
+            CURLOPT_HTTP_VERSION => defined('CURL_HTTP_VERSION_1_1')
+                ? CURL_HTTP_VERSION_1_1
+                : (defined('CURL_HTTP_VERSION_NONE') ? CURL_HTTP_VERSION_NONE : 0),
+            CURLOPT_HTTPHEADER => $headers,
             CURLOPT_ENCODING => ''
         ]);
 
         $content = curl_exec($ch);
-        if ($content === false) {
-            curl_close($ch);
-            return null;
-        }
-
         $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         curl_close($ch);
 
-        if ($status >= 400) {
-            return null;
+        if ($content !== false && $status < 400) {
+            return $content;
         }
+        $content = null;
+    }
 
-        return $content;
+    return fetchFeedContentWithStream($url, $headers, $userAgent);
+}
+
+function fetchFeedContentWithStream(string $url, array $headers, string $userAgent): ?string
+{
+    $normalizedHeaders = $headers;
+    $hasUserAgentHeader = false;
+    foreach ($normalizedHeaders as $header) {
+        if (stripos($header, 'User-Agent:') === 0) {
+            $hasUserAgentHeader = true;
+            break;
+        }
+    }
+    if (!$hasUserAgentHeader) {
+        $normalizedHeaders[] = 'User-Agent: ' . $userAgent;
+    }
+    if (!array_filter($normalizedHeaders, static fn($header) => stripos($header, 'Accept-Encoding:') === 0)) {
+        $normalizedHeaders[] = 'Accept-Encoding: gzip, deflate';
     }
 
     $context = stream_context_create([
         'http' => [
             'method' => 'GET',
             'timeout' => 10,
-            'header' => implode("\r\n", [
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36',
-                'Accept: application/rss+xml, application/xml;q=0.9, */*;q=0.8',
-                'Accept-Language: ja,en;q=0.8',
-                'Accept-Encoding: gzip, deflate'
-            ])
+            'header' => implode("\r\n", $normalizedHeaders)
         ]
     ]);
 
@@ -255,24 +284,27 @@ function fetchFeedContent(string $url): ?string
         return null;
     }
 
-    $headers = $meta['wrapper_data'] ?? [];
+    return decodeContentEncoding($content, $meta['wrapper_data'] ?? []);
+}
+
+function decodeContentEncoding(string $content, array $headers): string
+{
     foreach ($headers as $header) {
         if (stripos($header, 'Content-Encoding: gzip') !== false && function_exists('gzdecode')) {
             $decoded = @gzdecode($content);
             if ($decoded !== false) {
-                $content = $decoded;
+                return $decoded;
             }
-            break;
         }
+
         if (stripos($header, 'Content-Encoding: deflate') !== false) {
             $decoded = function_exists('gzinflate') ? @gzinflate($content) : false;
             if ($decoded === false && function_exists('gzuncompress')) {
                 $decoded = @gzuncompress($content);
             }
             if ($decoded !== false) {
-                $content = $decoded;
+                return $decoded;
             }
-            break;
         }
     }
 

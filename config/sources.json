@@ -4,7 +4,12 @@
     "ビジネス",
     "エンタメ",
     "スポーツ",
-    "政治"
+    "政治",
+    "国際",
+    "社会",
+    "科学",
+    "金融",
+    "ライフ"
   ],
   "sources": [
     {
@@ -12,27 +17,93 @@
       "name": "NHKニュース",
       "type": "rss",
       "url": "https://www3.nhk.or.jp/rss/news/cat0.xml",
-      "defaultCategories": ["政治", "テクノロジー"],
-      "defaultKeywords": []
+      "defaultCategories": ["社会", "政治"],
+      "defaultKeywords": ["速報", "国内"]
     },
     {
       "id": "nikkei",
       "name": "日本経済新聞",
       "type": "rss",
-      "url": "https://feeds.nikkei.co.jp/rss/nikkei/news",
-      "defaultCategories": ["ビジネス"],
-      "defaultKeywords": ["経済", "株"]
+      "url": "https://www.nikkei.com/rss/nkd/home/headline.xml",
+      "defaultCategories": ["ビジネス", "金融"],
+      "defaultKeywords": ["経済", "株"],
+      "request": {
+        "referer": "https://www.nikkei.com/"
+      }
     },
     {
       "id": "itmedia",
       "name": "ITmedia",
       "type": "rss",
       "url": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
+      "defaultCategories": ["テクノロジー", "科学"],
+      "defaultKeywords": ["IT", "AI"]
+    },
+    {
+      "id": "asahi",
+      "name": "朝日新聞デジタル",
+      "type": "rss",
+      "url": "https://www.asahi.com/rss/asahi/newsheadlines.rdf",
+      "defaultCategories": ["社会", "政治"],
+      "defaultKeywords": ["事件", "行政"]
+    },
+    {
+      "id": "mainichi",
+      "name": "毎日新聞",
+      "type": "rss",
+      "url": "https://mainichi.jp/rss/etc/flash.rss",
+      "defaultCategories": ["社会"],
+      "defaultKeywords": ["速報", "特集"]
+    },
+    {
+      "id": "yomiuri",
+      "name": "読売新聞オンライン",
+      "type": "rss",
+      "url": "https://www.yomiuri.co.jp/rss/yol/all.xml",
+      "defaultCategories": ["社会", "スポーツ"],
+      "defaultKeywords": ["事件", "スポーツ"]
+    },
+    {
+      "id": "reuters",
+      "name": "ロイター日本語ニュース",
+      "type": "rss",
+      "url": "https://feeds.reuters.com/reuters/JPTopNews",
+      "defaultCategories": ["国際", "ビジネス"],
+      "defaultKeywords": ["世界", "マーケット"]
+    },
+    {
+      "id": "cnetjapan",
+      "name": "CNET Japan",
+      "type": "rss",
+      "url": "https://japan.cnet.com/rss/all.rdf",
       "defaultCategories": ["テクノロジー"],
-      "defaultKeywords": ["IT"]
+      "defaultKeywords": ["スタートアップ", "ガジェット"]
+    },
+    {
+      "id": "gigazine",
+      "name": "GIGAZINE",
+      "type": "rss",
+      "url": "https://gigazine.net/news/rss_2.0/",
+      "defaultCategories": ["テクノロジー", "エンタメ"],
+      "defaultKeywords": ["レビュー", "インターネット"]
+    },
+    {
+      "id": "impress",
+      "name": "Impress Watch",
+      "type": "rss",
+      "url": "https://www.watch.impress.co.jp/data/rss/1.0/ipw/feed.rdf",
+      "defaultCategories": ["テクノロジー", "ビジネス"],
+      "defaultKeywords": ["IT", "製品"]
     }
   ],
   "views": [
+    {
+      "id": "top",
+      "name": "総合ニュース",
+      "categories": [],
+      "sources": ["nhk", "asahi", "mainichi", "yomiuri"],
+      "keywords": []
+    },
     {
       "id": "highlight",
       "name": "注目トピック",
@@ -43,16 +114,16 @@
     {
       "id": "business",
       "name": "ビジネス速報",
-      "categories": ["ビジネス"],
-      "sources": ["nikkei"],
-      "keywords": ["経済", "株"]
+      "categories": ["ビジネス", "金融"],
+      "sources": ["nikkei", "reuters"],
+      "keywords": ["経済", "株", "マーケット"]
     },
     {
       "id": "technology",
       "name": "テクノロジー特集",
-      "categories": ["テクノロジー"],
-      "sources": ["itmedia"],
-      "keywords": ["IT", "AI"]
+      "categories": ["テクノロジー", "科学"],
+      "sources": ["itmedia", "cnetjapan", "gigazine", "impress"],
+      "keywords": ["IT", "AI", "ガジェット"]
     }
   ],
   "conditions": {
