@@ -26,7 +26,8 @@ if (file_exists($configPath)) {
 </header>
 
 <main class="app-main">
-    <aside class="filter-panel">
+    <aside id="filter-panel" class="filter-panel">
+        <button type="button" id="close-filters" class="filter-close" aria-label="フィルターを閉じる">閉じる</button>
         <section>
             <h2>ビュー</h2>
             <div id="view-list" class="view-list"></div>
@@ -48,8 +49,10 @@ if (file_exists($configPath)) {
             <div id="keyword-tags" class="keyword-tags"></div>
         </section>
     </aside>
+    <div id="filter-backdrop" class="filter-backdrop" hidden></div>
     <section class="news-area">
         <div class="news-toolbar">
+            <button type="button" id="toggle-filters" class="secondary-button filter-toggle" aria-expanded="false" aria-controls="filter-panel">フィルター</button>
             <span id="status-text">ニュースを読み込んでください</span>
         </div>
         <div id="news-grid" class="news-grid" aria-live="polite"></div>
