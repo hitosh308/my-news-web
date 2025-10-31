@@ -2,13 +2,16 @@ const state = {
     categories: [],
     sources: [],
     keywords: [],
-    layout: 'grid',
-    data: null
+    selectedCategories: null,
+    data: null,
+    views: [],
+    activeViewId: null
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     bootstrapConfig();
     bindEvents();
+    renderViewList();
     renderFilters();
     renderKeywords();
     loadNews();
@@ -22,8 +25,20 @@ function bootstrapConfig() {
         name: source.name,
         selected: true
     }));
-    state.keywords = (config.conditions && config.conditions.keywords) ? config.conditions.keywords.slice() : [];
-    state.rawConfig = config;
+    state.views = Array.isArray(config.views) ? config.views : [];
+
+    if (state.views.length > 0) {
+        applyView(state.views[0].id, { suppressRender: true });
+    } else {
+        state.activeViewId = null;
+        state.selectedCategories = null;
+        state.keywords = (config.conditions && Array.isArray(config.conditions.keywords))
+            ? config.conditions.keywords.slice()
+            : [];
+        state.sources.forEach(source => {
+            source.selected = true;
+        });
+    }
 }
 
 function bindEvents() {
@@ -41,27 +56,62 @@ function bindEvents() {
             e.target.value = '';
         }
     });
+}
 
-    document.querySelectorAll('.layout-button').forEach(button => {
+function renderViewList() {
+    const container = document.getElementById('view-list');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '';
+
+    if (!state.views.length) {
+        const empty = document.createElement('p');
+        empty.className = 'view-empty';
+        empty.textContent = 'ビューが設定されていません。';
+        container.appendChild(empty);
+        return;
+    }
+
+    state.views.forEach(view => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `view-button${state.activeViewId === view.id ? ' active' : ''}`;
+        button.textContent = view.name || view.id;
         button.addEventListener('click', () => {
-            state.layout = button.dataset.layout;
-            document.querySelectorAll('.layout-button').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            applyLayout();
+            if (state.activeViewId === view.id) {
+                return;
+            }
+            applyView(view.id);
         });
+        container.appendChild(button);
+    });
+}
+
+function applyView(viewId, options = {}) {
+    const view = state.views.find(v => v.id === viewId);
+    if (!view) {
+        return;
+    }
+
+    state.activeViewId = viewId;
+    state.keywords = Array.isArray(view.keywords) ? view.keywords.slice() : [];
+    const categories = Array.isArray(view.categories) ? view.categories.filter(Boolean) : [];
+    state.selectedCategories = categories.length === 0 ? null : categories;
+
+    const sourceIds = Array.isArray(view.sources) ? view.sources.filter(Boolean) : [];
+    const selectedSourceIds = sourceIds.length === 0 ? state.sources.map(source => source.id) : sourceIds;
+    state.sources.forEach(source => {
+        source.selected = selectedSourceIds.includes(source.id);
     });
 
-    document.getElementById('open-settings').addEventListener('click', () => {
-        openSettings();
-    });
-
-    document.getElementById('close-settings').addEventListener('click', () => {
-        closeSettings();
-    });
-
-    document.getElementById('save-settings').addEventListener('click', () => {
-        saveSettings();
-    });
+    if (!options.suppressRender) {
+        renderViewList();
+        renderFilters();
+        renderKeywords();
+        loadNews();
+    }
 }
 
 function renderFilters() {
@@ -70,12 +120,16 @@ function renderFilters() {
     state.categories.forEach((category, index) => {
         const id = `cat-${index}`;
         const wrapper = document.createElement('label');
-        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${category}" checked> ${category}`;
+        const isChecked = state.selectedCategories === null || (state.selectedCategories || []).includes(category);
+        const value = escapeAttribute(category);
+        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${isChecked ? 'checked' : ''}> ${escapeHtml(category)}`;
         categoryList.appendChild(wrapper);
     });
 
     categoryList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
+            const selected = Array.from(categoryList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
+            state.selectedCategories = selected.length === state.categories.length ? null : selected;
             loadNews();
         });
     });
@@ -85,7 +139,8 @@ function renderFilters() {
     state.sources.forEach((source, index) => {
         const id = `source-${index}`;
         const wrapper = document.createElement('label');
-        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${source.id}" ${source.selected ? 'checked' : ''}> ${source.name}`;
+        const value = escapeAttribute(source.id);
+        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${source.selected ? 'checked' : ''}> ${escapeHtml(source.name)}`;
         sourceList.appendChild(wrapper);
     });
 
@@ -106,7 +161,7 @@ function renderKeywords() {
     state.keywords.forEach(keyword => {
         const tag = document.createElement('span');
         tag.className = 'keyword-tag';
-        tag.innerHTML = `${keyword}<button aria-label="削除" data-value="${keyword}">×</button>`;
+        tag.innerHTML = `${escapeHtml(keyword)}<button aria-label="削除" data-value="${escapeAttribute(keyword)}">×</button>`;
         container.appendChild(tag);
     });
 
@@ -138,6 +193,7 @@ async function loadNews() {
     statusText.textContent = '読み込み中...';
 
     const selectedCategories = Array.from(document.querySelectorAll('#category-list input:checked')).map(el => el.value);
+    state.selectedCategories = selectedCategories.length === state.categories.length ? null : selectedCategories;
     const selectedSources = state.sources.filter(s => s.selected).map(s => s.id);
 
     try {
@@ -170,7 +226,7 @@ async function loadNews() {
 
 function renderNews() {
     const container = document.getElementById('news-grid');
-    container.className = `news-grid ${state.layout}`;
+    container.className = 'news-grid column';
     container.innerHTML = '';
 
     if (!state.data || !state.data.sources || state.data.sources.length === 0) {
@@ -187,7 +243,7 @@ function renderNews() {
         const header = document.createElement('div');
         header.className = 'section-header';
         const categoryLabels = (source.categories || []).join(', ');
-        header.innerHTML = `<h3>${source.source}</h3><span>${categoryLabels}</span>`;
+        header.innerHTML = `<h3>${escapeHtml(source.source)}</h3><span>${escapeHtml(categoryLabels)}</span>`;
         section.appendChild(header);
 
         const articleWrapper = document.createElement('div');
@@ -204,28 +260,25 @@ function renderNews() {
         } else {
             source.items.forEach(item => {
                 const card = document.createElement('article');
-               card.className = 'article-card';
-               card.draggable = true;
-               card.innerHTML = `
-                   <div class="article-title">${escapeHtml(item.title)}</div>
-                   <div class="article-meta">${item.published ? `<span>${item.published}</span>` : ''}</div>
-                   <div class="article-description">${escapeHtml(item.description)}</div>
-                   <a href="${item.link}" class="article-link" target="_blank" rel="noopener noreferrer">続きを読む</a>
-               `;
+                card.className = 'article-card';
+                card.draggable = true;
+                const imageHtml = item.image ? `<figure class="article-image"><img src="${escapeAttribute(item.image)}" alt="${escapeAttribute(item.title || '記事のアイキャッチ画像')}"></figure>` : '';
+                card.innerHTML = `
+                    ${imageHtml}
+                    <div class="article-title">${escapeHtml(item.title)}</div>
+                    <div class="article-meta">${item.published ? `<span>${escapeHtml(item.published)}</span>` : ''}</div>
+                    <div class="article-description">${escapeHtml(item.description)}</div>
+                    <a href="${escapeAttribute(item.link)}" class="article-link" target="_blank" rel="noopener noreferrer">続きを読む</a>
+                `;
                 articleWrapper.appendChild(card);
                 enableCardDrag(card);
-           });
-       }
+            });
+        }
 
         section.appendChild(articleWrapper);
         container.appendChild(section);
         enableSectionDrag(section, container);
     });
-}
-
-function applyLayout() {
-    const container = document.getElementById('news-grid');
-    container.className = `news-grid ${state.layout}`;
 }
 
 function escapeHtml(value) {
@@ -236,6 +289,14 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+function escapeAttribute(value) {
+    const safe = value || '';
+    return safe
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
 }
 
 function enableSectionDrag(section, container) {
@@ -299,63 +360,4 @@ function getDragAfterElement(container, y, selector = '.news-section') {
         }
         return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element || null;
-}
-
-function openSettings() {
-    const modal = document.getElementById('settings-modal');
-    const editor = document.getElementById('config-editor');
-    editor.value = JSON.stringify(state.rawConfig || {}, null, 2);
-    modal.hidden = false;
-}
-
-function closeSettings() {
-    const modal = document.getElementById('settings-modal');
-    modal.hidden = true;
-}
-
-async function saveSettings() {
-    const editor = document.getElementById('config-editor');
-    let parsed;
-    try {
-        parsed = JSON.parse(editor.value);
-    } catch (e) {
-        alert('JSONの構文が正しくありません。');
-        return;
-    }
-
-    try {
-        const response = await fetch('api/settings.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ config: parsed })
-        });
-
-        if (!response.ok) {
-            throw new Error('保存に失敗しました');
-        }
-
-        const data = await response.json();
-        if (data.status !== 'ok') {
-            throw new Error('保存に失敗しました');
-        }
-
-        state.rawConfig = parsed;
-        state.categories = parsed.categories || [];
-        state.sources = (parsed.sources || []).map(source => ({
-            id: source.id,
-            name: source.name,
-            selected: true
-        }));
-        state.keywords = (parsed.conditions && parsed.conditions.keywords) ? parsed.conditions.keywords.slice() : [];
-
-        renderFilters();
-        renderKeywords();
-        closeSettings();
-        loadNews();
-    } catch (error) {
-        console.error(error);
-        alert('設定の保存に失敗しました。');
-    }
 }

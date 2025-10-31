@@ -109,6 +109,7 @@ function fetchSourceItems(array $source): ?array
             'description' => mb_substr(strip_tags((string)($entry->description ?? $entry->summary ?? '')), 0, 160),
             'published' => formatDate((string)($entry->pubDate ?? $entry->updated ?? '')),
             'guid' => (string)($entry->guid ?? ''),
+            'image' => extractImageFromEntry($entry)
         ];
         $count++;
     }
@@ -147,4 +148,46 @@ function formatDate(string $date): string
     }
 
     return date('Y-m-d H:i', $timestamp);
+}
+
+function extractImageFromEntry(SimpleXMLElement $entry): string
+{
+    if (isset($entry->enclosure)) {
+        foreach ($entry->enclosure as $enclosure) {
+            $url = (string)($enclosure['url'] ?? '');
+            $type = (string)($enclosure['type'] ?? '');
+            if ($url !== '' && ($type === '' || stripos($type, 'image') !== false)) {
+                return $url;
+            }
+        }
+    }
+
+    $namespaces = $entry->getNameSpaces(true);
+    if (isset($namespaces['media'])) {
+        $media = $entry->children($namespaces['media']);
+        if (isset($media->content)) {
+            foreach ($media->content as $content) {
+                $url = (string)($content['url'] ?? '');
+                $type = (string)($content['type'] ?? '');
+                if ($url !== '' && ($type === '' || stripos($type, 'image') !== false)) {
+                    return $url;
+                }
+            }
+        }
+        if (isset($media->thumbnail)) {
+            foreach ($media->thumbnail as $thumb) {
+                $url = (string)($thumb['url'] ?? '');
+                if ($url !== '') {
+                    return $url;
+                }
+            }
+        }
+    }
+
+    $description = (string)($entry->description ?? $entry->summary ?? '');
+    if ($description !== '' && preg_match('/<img[^>]+src="([^"]+)"/i', $description, $matches)) {
+        return html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5);
+    }
+
+    return '';
 }

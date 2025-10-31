@@ -20,13 +20,17 @@ if (file_exists($configPath)) {
         <p>複数のニュースサイトから好みのニュースをピックアップ</p>
     </div>
     <div class="header-actions">
-        <button id="open-settings" class="ghost-button">設定を編集</button>
+        <a href="settings.php" class="ghost-button">設定を編集</a>
         <button id="refresh-news" class="primary-button">ニュースを更新</button>
     </div>
 </header>
 
 <main class="app-main">
     <aside class="filter-panel">
+        <section>
+            <h2>ビュー</h2>
+            <div id="view-list" class="view-list"></div>
+        </section>
         <section>
             <h2>カテゴリ</h2>
             <div id="category-list" class="checkbox-list"></div>
@@ -43,13 +47,6 @@ if (file_exists($configPath)) {
             </div>
             <div id="keyword-tags" class="keyword-tags"></div>
         </section>
-        <section>
-            <h2>レイアウトモード</h2>
-            <div class="layout-toggle">
-                <button data-layout="grid" class="layout-button active">カード</button>
-                <button data-layout="column" class="layout-button">カラム</button>
-            </div>
-        </section>
     </aside>
     <section class="news-area">
         <div class="news-toolbar">
@@ -58,20 +55,6 @@ if (file_exists($configPath)) {
         <div id="news-grid" class="news-grid" aria-live="polite"></div>
     </section>
 </main>
-
-<div id="settings-modal" class="modal" hidden>
-    <div class="modal-content">
-        <header class="modal-header">
-            <h2>設定の編集</h2>
-            <button id="close-settings" class="ghost-button">閉じる</button>
-        </header>
-        <p>JSON形式でニュースの取得元やカテゴリ・条件を編集できます。</p>
-        <textarea id="config-editor" rows="18" spellcheck="false"></textarea>
-        <div class="modal-actions">
-            <button id="save-settings" class="primary-button">保存する</button>
-        </div>
-    </div>
-</div>
 
 <script>
     window.NEWS_CONFIG = <?php echo json_encode($config, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT); ?>;
