@@ -227,19 +227,19 @@ async function loadNews() {
 }
 
 function initializeFilterPanel() {
-    const toggleFiltersButton = document.getElementById('toggle-filters');
+    const toggleButtons = document.querySelectorAll('[data-filter-toggle]');
     const closeFiltersButton = document.getElementById('close-filters');
     const filterBackdrop = document.getElementById('filter-backdrop');
 
-    if (toggleFiltersButton) {
-        toggleFiltersButton.addEventListener('click', () => {
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
             if (document.body.classList.contains('filters-open')) {
                 closeFilters();
             } else {
                 openFilters();
             }
         });
-    }
+    });
 
     if (closeFiltersButton) {
         closeFiltersButton.addEventListener('click', closeFilters);
@@ -276,31 +276,23 @@ function openFilters() {
 
     document.body.classList.add('filters-open');
     const filterPanel = document.getElementById('filter-panel');
-    const toggleFiltersButton = document.getElementById('toggle-filters');
     const filterBackdrop = document.getElementById('filter-backdrop');
 
     if (filterPanel) {
         filterPanel.setAttribute('aria-hidden', 'false');
     }
 
-    if (toggleFiltersButton) {
-        toggleFiltersButton.setAttribute('aria-expanded', 'true');
-    }
-
     if (filterBackdrop) {
         filterBackdrop.hidden = false;
     }
+
+    setToggleState(true);
 }
 
 function closeFilters() {
     document.body.classList.remove('filters-open');
     const filterPanel = document.getElementById('filter-panel');
-    const toggleFiltersButton = document.getElementById('toggle-filters');
     const filterBackdrop = document.getElementById('filter-backdrop');
-
-    if (toggleFiltersButton) {
-        toggleFiltersButton.setAttribute('aria-expanded', 'false');
-    }
 
     if (filterBackdrop) {
         filterBackdrop.hidden = true;
@@ -313,10 +305,24 @@ function closeFilters() {
             filterPanel.removeAttribute('aria-hidden');
         }
     }
+
+    setToggleState(false);
 }
 
 function isMobileLayout() {
     return window.matchMedia('(max-width: 960px)').matches;
+}
+
+function setToggleState(isOpen) {
+    const toggleButtons = document.querySelectorAll('[data-filter-toggle]');
+    toggleButtons.forEach(button => {
+        button.setAttribute('aria-expanded', String(isOpen));
+        const labelOpen = button.dataset.labelOpen;
+        const labelClose = button.dataset.labelClose;
+        if (labelOpen && labelClose) {
+            button.setAttribute('aria-label', isOpen ? labelClose : labelOpen);
+        }
+    });
 }
 
 function renderNews() {

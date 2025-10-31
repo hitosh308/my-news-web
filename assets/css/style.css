@@ -53,6 +53,24 @@ button:active {
     padding: 0.45rem 1rem;
 }
 
+.mobile-menu-button {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    font-size: 1.35rem;
+    line-height: 1;
+    background: var(--accent-color);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+
+.mobile-menu-button span {
+    pointer-events: none;
+}
+
 .ghost-button {
     background: transparent;
     color: var(--accent-color);
@@ -431,6 +449,10 @@ button:active {
         display: inline-flex;
     }
 
+    .mobile-menu-button {
+        display: inline-flex;
+    }
+
     body.filters-open {
         overflow: hidden;
     }
@@ -454,6 +476,11 @@ button:active {
     .header-actions .primary-button {
         flex: 1 1 48%;
         text-align: center;
+    }
+
+    .mobile-menu-button {
+        order: -1;
+        flex: 0 0 auto;
     }
 
     .app-main {
