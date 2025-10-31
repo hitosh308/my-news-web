@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Sample Feed</title>
+    <item>
+      <title>First Article</title>
+      <link>https://example.com/articles/1</link>
+      <description><![CDATA[<p>First description about AI.</p><img src="https://example.com/images/1.jpg" />]]></description>
+      <pubDate>Wed, 24 Apr 2024 10:00:00 +0900</pubDate>
+      <guid>1</guid>
+    </item>
+    <item>
+      <title>Second Article</title>
+      <link>https://example.com/articles/2</link>
+      <description>Business update and stock news</description>
+      <pubDate>Wed, 24 Apr 2024 12:00:00 +0900</pubDate>
+      <guid>2</guid>
+      <media:thumbnail url="https://example.com/images/2.jpg" />
+    </item>
+  </channel>
+</rss>
