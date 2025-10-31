@@ -6,9 +6,6 @@
     "スポーツ",
     "政治"
   ],
-  "conditions": {
-    "keywords": ["AI", "スタートアップ", "株価"]
-  },
   "sources": [
     {
       "id": "nhk",
@@ -34,5 +31,31 @@
       "defaultCategories": ["テクノロジー"],
       "defaultKeywords": ["IT"]
     }
-  ]
+  ],
+  "views": [
+    {
+      "id": "highlight",
+      "name": "注目トピック",
+      "categories": [],
+      "sources": [],
+      "keywords": ["AI", "スタートアップ", "株価"]
+    },
+    {
+      "id": "business",
+      "name": "ビジネス速報",
+      "categories": ["ビジネス"],
+      "sources": ["nikkei"],
+      "keywords": ["経済", "株"]
+    },
+    {
+      "id": "technology",
+      "name": "テクノロジー特集",
+      "categories": ["テクノロジー"],
+      "sources": ["itmedia"],
+      "keywords": ["IT", "AI"]
+    }
+  ],
+  "conditions": {
+    "keywords": []
+  }
 }
