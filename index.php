@@ -20,6 +20,9 @@ if (file_exists($configPath)) {
         <p>複数のニュースサイトから好みのニュースをピックアップ</p>
     </div>
     <div class="header-actions">
+        <button id="mobile-menu-toggle" class="secondary-button mobile-menu-button" type="button" aria-label="検索条件を開く" aria-controls="filter-panel" aria-expanded="false" data-filter-toggle data-label-open="検索条件を開く" data-label-close="検索条件を閉じる">
+            <span aria-hidden="true">☰</span>
+        </button>
         <a href="settings.php" class="ghost-button">設定を編集</a>
         <button id="refresh-news" class="primary-button">ニュースを更新</button>
     </div>
@@ -52,7 +55,7 @@ if (file_exists($configPath)) {
     <div id="filter-backdrop" class="filter-backdrop" hidden></div>
     <section class="news-area">
         <div class="news-toolbar">
-            <button type="button" id="toggle-filters" class="secondary-button filter-toggle" aria-expanded="false" aria-controls="filter-panel">フィルター</button>
+            <button type="button" id="toggle-filters" class="secondary-button filter-toggle" aria-expanded="false" aria-controls="filter-panel" data-filter-toggle>フィルター</button>
             <span id="status-text">ニュースを読み込んでください</span>
         </div>
         <div id="news-grid" class="news-grid" aria-live="polite"></div>
