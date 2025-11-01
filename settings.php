@@ -1,9 +1,23 @@
 <?php
-$configPath = __DIR__ . '/config/sources.json';
-$config = [];
-if (file_exists($configPath)) {
-    $config = json_decode(file_get_contents($configPath), true) ?: [];
+$sourceConfigPath = __DIR__ . '/config/sources.json';
+$viewConfigPath = __DIR__ . '/config/views.json';
+
+$sourcesConfig = [];
+if (file_exists($sourceConfigPath)) {
+    $sourcesConfig = json_decode(file_get_contents($sourceConfigPath), true) ?: [];
 }
+
+$viewsConfig = [];
+if (file_exists($viewConfigPath)) {
+    $viewsConfig = json_decode(file_get_contents($viewConfigPath), true) ?: [];
+}
+
+$config = [
+    'categories' => $sourcesConfig['categories'] ?? [],
+    'sources' => $sourcesConfig['sources'] ?? [],
+    'views' => $viewsConfig['views'] ?? [],
+    'conditions' => $viewsConfig['conditions'] ?? ['keywords' => []]
+];
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -17,7 +31,7 @@ if (file_exists($configPath)) {
 <header class="app-header">
     <div class="header-title">
         <h1>表示する内容の設定</h1>
-        <p>JSONを編集してニュースビューやフィルターを管理します</p>
+        <p>ビューの内容やキーワードを画面から編集できます</p>
     </div>
     <div class="header-actions">
         <a href="index.php" class="ghost-button">トップに戻る</a>
@@ -26,8 +40,17 @@ if (file_exists($configPath)) {
 
 <main class="settings-main">
     <section class="settings-card">
-        <p>ビューやカテゴリ、ニュースサイトの設定を編集して保存できます。</p>
-        <textarea id="config-editor" spellcheck="false"></textarea>
+        <p>表示したいカテゴリ・ニュースサイト・キーワードの組み合わせをビューとして登録できます。</p>
+        <div class="view-editor-header">
+            <h2>ビュー一覧</h2>
+            <button id="add-view" type="button" class="secondary-button">ビューを追加</button>
+        </div>
+        <div id="view-editor" class="view-editor"></div>
+        <section class="default-keywords">
+            <h2>共通のキーワード</h2>
+            <p>どのビューにも含めたいキーワードがあればカンマ区切りで入力してください。</p>
+            <input type="text" id="default-keywords" placeholder="例: AI, 経済">
+        </section>
         <div class="settings-actions">
             <button id="save-settings" class="primary-button">保存する</button>
         </div>

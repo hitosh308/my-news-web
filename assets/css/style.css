@@ -379,23 +379,144 @@ button:active {
     gap: 1.2rem;
 }
 
-#config-editor {
-    width: 100%;
-    min-height: 420px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-    font-family: 'Fira Code', 'Consolas', monospace;
-    font-size: 0.9rem;
-    background: #f8fafc;
-    resize: vertical;
-}
-
 .settings-actions {
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
     flex-wrap: wrap;
+}
+
+.view-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.view-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.view-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.view-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.view-card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.ghost-button.danger {
+    color: #e53935;
+}
+
+.ghost-button.danger:hover,
+.ghost-button.danger:focus {
+    color: #b71c1c;
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    color: var(--muted-text);
+}
+
+.form-grid input[type="text"],
+.view-field-group textarea,
+.default-keywords input[type="text"],
+#default-keywords {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.95rem;
+    background: #fff;
+}
+
+.view-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.view-field-group h4 {
+    margin: 0;
+}
+
+.view-field-group p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted-text);
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem;
+}
+
+.checkbox-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.checkbox-grid input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+.checkbox-grid .empty-helper,
+.empty-helper {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted-text);
+    grid-column: 1 / -1;
+}
+
+.view-field-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.default-keywords {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.default-keywords h2 {
+    margin: 0;
+}
+
+.default-keywords p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted-text);
 }
 
 .settings-status {
