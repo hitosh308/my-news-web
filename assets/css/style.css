@@ -259,7 +259,18 @@ button:active {
 }
 
 .news-grid.column {
-    column-gap: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+}
+
+@media (min-width: 961px) {
+    .news-grid.column {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.4rem;
+        align-items: start;
+    }
 }
 
 .news-section {
