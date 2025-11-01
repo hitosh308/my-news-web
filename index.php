@@ -1,9 +1,23 @@
 <?php
-$configPath = __DIR__ . '/config/sources.json';
-$config = [];
-if (file_exists($configPath)) {
-    $config = json_decode(file_get_contents($configPath), true) ?: [];
+$sourceConfigPath = __DIR__ . '/config/sources.json';
+$viewConfigPath = __DIR__ . '/config/views.json';
+
+$sourcesConfig = [];
+if (file_exists($sourceConfigPath)) {
+    $sourcesConfig = json_decode(file_get_contents($sourceConfigPath), true) ?: [];
 }
+
+$viewsConfig = [];
+if (file_exists($viewConfigPath)) {
+    $viewsConfig = json_decode(file_get_contents($viewConfigPath), true) ?: [];
+}
+
+$config = [
+    'categories' => $sourcesConfig['categories'] ?? [],
+    'sources' => $sourcesConfig['sources'] ?? [],
+    'views' => $viewsConfig['views'] ?? [],
+    'conditions' => $viewsConfig['conditions'] ?? ['keywords' => []]
+];
 ?>
 <!DOCTYPE html>
 <html lang="ja">

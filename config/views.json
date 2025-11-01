@@ -1,0 +1,66 @@
+{
+  "views": [
+    {
+      "id": "top",
+      "name": "総合ニュース",
+      "categories": [],
+      "sources": [
+        "nhk",
+        "asahi",
+        "mainichi",
+        "yomiuri"
+      ],
+      "keywords": []
+    },
+    {
+      "id": "highlight",
+      "name": "注目トピック",
+      "categories": [],
+      "sources": [],
+      "keywords": [
+        "AI",
+        "スタートアップ",
+        "株価"
+      ]
+    },
+    {
+      "id": "business",
+      "name": "ビジネス速報",
+      "categories": [
+        "ビジネス",
+        "金融"
+      ],
+      "sources": [
+        "nikkei",
+        "reuters"
+      ],
+      "keywords": [
+        "経済",
+        "株",
+        "マーケット"
+      ]
+    },
+    {
+      "id": "technology",
+      "name": "テクノロジー特集",
+      "categories": [
+        "テクノロジー",
+        "科学"
+      ],
+      "sources": [
+        "itmedia",
+        "cnetjapan",
+        "gigazine",
+        "impress"
+      ],
+      "keywords": [
+        "IT",
+        "AI",
+        "ガジェット"
+      ]
+    }
+  ],
+  "conditions": {
+    "keywords": []
+  }
+}
