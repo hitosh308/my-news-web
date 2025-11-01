@@ -49,22 +49,6 @@ $config = [
             <h2>ビュー</h2>
             <div id="view-list" class="view-list"></div>
         </section>
-        <section>
-            <h2>カテゴリ</h2>
-            <div id="category-list" class="checkbox-list"></div>
-        </section>
-        <section>
-            <h2>ニュースサイト</h2>
-            <div id="source-list" class="checkbox-list"></div>
-        </section>
-        <section>
-            <h2>キーワード</h2>
-            <div class="keyword-controls">
-                <input type="text" id="keyword-input" placeholder="キーワードを入力" />
-                <button id="add-keyword" class="secondary-button">追加</button>
-            </div>
-            <div id="keyword-tags" class="keyword-tags"></div>
-        </section>
     </aside>
     <div id="filter-backdrop" class="filter-backdrop" hidden></div>
     <section class="news-area">
