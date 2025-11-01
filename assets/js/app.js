@@ -42,20 +42,33 @@ function bootstrapConfig() {
 }
 
 function bindEvents() {
-    document.getElementById('refresh-news').addEventListener('click', loadNews);
-    document.getElementById('add-keyword').addEventListener('click', () => {
-        const input = document.getElementById('keyword-input');
-        addKeyword(input.value);
-        input.value = '';
-    });
+    const refreshButton = document.getElementById('refresh-news');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', loadNews);
+    }
 
-    document.getElementById('keyword-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addKeyword(e.target.value);
-            e.target.value = '';
-        }
-    });
+    const addKeywordButton = document.getElementById('add-keyword');
+    if (addKeywordButton) {
+        addKeywordButton.addEventListener('click', () => {
+            const input = document.getElementById('keyword-input');
+            if (!input) {
+                return;
+            }
+            addKeyword(input.value);
+            input.value = '';
+        });
+    }
+
+    const keywordInput = document.getElementById('keyword-input');
+    if (keywordInput) {
+        keywordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addKeyword(e.target.value);
+                e.target.value = '';
+            }
+        });
+    }
 
     initializeFilterPanel();
 }
@@ -118,47 +131,56 @@ function applyView(viewId, options = {}) {
 
 function renderFilters() {
     const categoryList = document.getElementById('category-list');
-    categoryList.innerHTML = '';
-    state.categories.forEach((category, index) => {
-        const id = `cat-${index}`;
-        const wrapper = document.createElement('label');
-        const isChecked = state.selectedCategories === null || (state.selectedCategories || []).includes(category);
-        const value = escapeAttribute(category);
-        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${isChecked ? 'checked' : ''}> ${escapeHtml(category)}`;
-        categoryList.appendChild(wrapper);
-    });
-
-    categoryList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            const selected = Array.from(categoryList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
-            state.selectedCategories = selected.length === state.categories.length ? null : selected;
-            loadNews();
+    if (categoryList) {
+        categoryList.innerHTML = '';
+        state.categories.forEach((category, index) => {
+            const id = `cat-${index}`;
+            const wrapper = document.createElement('label');
+            const isChecked = state.selectedCategories === null || (state.selectedCategories || []).includes(category);
+            const value = escapeAttribute(category);
+            wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${isChecked ? 'checked' : ''}> ${escapeHtml(category)}`;
+            categoryList.appendChild(wrapper);
         });
-    });
+
+        categoryList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const checkboxes = categoryList.querySelectorAll('input[type="checkbox"]');
+                const selected = Array.from(categoryList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
+                state.selectedCategories = selected.length === checkboxes.length ? null : selected;
+                loadNews();
+            });
+        });
+    }
 
     const sourceList = document.getElementById('source-list');
-    sourceList.innerHTML = '';
-    state.sources.forEach((source, index) => {
-        const id = `source-${index}`;
-        const wrapper = document.createElement('label');
-        const value = escapeAttribute(source.id);
-        wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${source.selected ? 'checked' : ''}> ${escapeHtml(source.name)}`;
-        sourceList.appendChild(wrapper);
-    });
-
-    sourceList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            const source = state.sources.find(s => s.id === checkbox.value);
-            if (source) {
-                source.selected = checkbox.checked;
-            }
-            loadNews();
+    if (sourceList) {
+        sourceList.innerHTML = '';
+        state.sources.forEach((source, index) => {
+            const id = `source-${index}`;
+            const wrapper = document.createElement('label');
+            const value = escapeAttribute(source.id);
+            wrapper.innerHTML = `<input type="checkbox" id="${id}" value="${value}" ${source.selected ? 'checked' : ''}> ${escapeHtml(source.name)}`;
+            sourceList.appendChild(wrapper);
         });
-    });
+
+        sourceList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const source = state.sources.find(s => s.id === checkbox.value);
+                if (source) {
+                    source.selected = checkbox.checked;
+                }
+                loadNews();
+            });
+        });
+    }
 }
 
 function renderKeywords() {
     const container = document.getElementById('keyword-tags');
+    if (!container) {
+        return;
+    }
+
     container.innerHTML = '';
     state.keywords.forEach(keyword => {
         const tag = document.createElement('span');
@@ -194,9 +216,26 @@ async function loadNews() {
     const statusText = document.getElementById('status-text');
     statusText.textContent = '読み込み中...';
 
-    const selectedCategories = Array.from(document.querySelectorAll('#category-list input:checked')).map(el => el.value);
-    state.selectedCategories = selectedCategories.length === state.categories.length ? null : selectedCategories;
+    const categoryList = document.getElementById('category-list');
+    if (categoryList) {
+        const checkboxes = categoryList.querySelectorAll('input[type="checkbox"]');
+        const checkedValues = Array.from(categoryList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
+        state.selectedCategories = checkedValues.length === checkboxes.length ? null : checkedValues;
+    }
+
+    const sourceList = document.getElementById('source-list');
+    if (sourceList) {
+        const selectedIds = Array.from(sourceList.querySelectorAll('input[type="checkbox"]'))
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+        state.sources.forEach(source => {
+            source.selected = selectedIds.includes(source.id);
+        });
+    }
+
+    const categoriesPayload = state.selectedCategories === null ? null : state.selectedCategories.slice();
     const selectedSources = state.sources.filter(s => s.selected).map(s => s.id);
+    const keywordsPayload = state.keywords.slice();
 
     try {
         const response = await fetch('api/news.php', {
@@ -205,9 +244,9 @@ async function loadNews() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                categories: selectedCategories,
+                categories: categoriesPayload,
                 sources: selectedSources,
-                keywords: state.keywords
+                keywords: keywordsPayload
             })
         });
 
@@ -343,9 +382,15 @@ function renderNews() {
 
         const header = document.createElement('div');
         header.className = 'section-header';
-        const categoryLabels = (source.categories || []).join(', ');
+        const categories = (source.categories || [])
+            .map(category => typeof category === 'string' ? category.trim() : category)
+            .filter(Boolean);
+        const categoryLabels = categories.join(', ');
         const categoryHtml = categoryLabels ? `<span class="section-categories">${escapeHtml(categoryLabels)}</span>` : '';
-        header.innerHTML = `${categoryHtml}<span class="section-source">${escapeHtml(source.source)}</span>`;
+        const sourceName = typeof source.source === 'string' ? source.source.trim() : source.source;
+        const sourceHtml = sourceName ? `<span class="section-source">${escapeHtml(sourceName)}</span>` : '';
+        const headerContent = `${categoryHtml}${sourceHtml}`;
+        header.innerHTML = headerContent;
         section.appendChild(header);
 
         const articleWrapper = document.createElement('div');
