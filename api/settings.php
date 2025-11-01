@@ -9,9 +9,22 @@ if (!file_exists($configPath)) {
     exit;
 }
 
+$existingConfig = json_decode((string)file_get_contents($configPath), true);
+if (!is_array($existingConfig)) {
+    $existingConfig = ['views' => [], 'conditions' => ['keywords' => []]];
+}
+if (!isset($existingConfig['views']) || !is_array($existingConfig['views'])) {
+    $existingConfig['views'] = [];
+}
+if (!isset($existingConfig['conditions']) || !is_array($existingConfig['conditions'])) {
+    $existingConfig['conditions'] = ['keywords' => []];
+}
+if (!isset($existingConfig['conditions']['keywords']) || !is_array($existingConfig['conditions']['keywords'])) {
+    $existingConfig['conditions']['keywords'] = [];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $config = file_get_contents($configPath);
-    echo $config;
+    echo json_encode($existingConfig, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -42,6 +55,50 @@ if (!is_array($conditions)) {
 
 $normalizedViews = [];
 $idRegistry = [];
+$maxAutoNumber = 0;
+
+$normalizeStringList = static function ($values): array {
+    if (!is_array($values)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($values as $value) {
+        if (!is_string($value)) {
+            continue;
+        }
+        $trimmed = trim($value);
+        if ($trimmed === '' || isset($normalized[$trimmed])) {
+            continue;
+        }
+        $normalized[$trimmed] = true;
+    }
+
+    return array_keys($normalized);
+};
+
+$collectAutoNumber = static function (string $id) use (&$maxAutoNumber): void {
+    if (preg_match('/^view-(\d+)$/', $id, $matches)) {
+        $number = (int)$matches[1];
+        if ($number > $maxAutoNumber) {
+            $maxAutoNumber = $number;
+        }
+    }
+};
+
+foreach ($existingConfig['views'] as $existingView) {
+    if (!is_array($existingView)) {
+        continue;
+    }
+    $existingId = isset($existingView['id']) && is_string($existingView['id'])
+        ? trim($existingView['id'])
+        : '';
+    if ($existingId === '') {
+        continue;
+    }
+    $collectAutoNumber($existingId);
+}
+
 foreach ($views as $view) {
     if (!is_array($view)) {
         continue;
@@ -50,30 +107,35 @@ foreach ($views as $view) {
     $id = isset($view['id']) && is_string($view['id']) ? trim($view['id']) : '';
     $name = isset($view['name']) && is_string($view['name']) ? trim($view['name']) : '';
 
-    if ($id === '' || $name === '') {
+    if ($name === '') {
         continue;
     }
 
-    if (isset($idRegistry[$id])) {
-        continue;
+    if ($id !== '') {
+        if (isset($idRegistry[$id])) {
+            continue;
+        }
+        $collectAutoNumber($id);
+    } else {
+        do {
+            $maxAutoNumber++;
+            $id = 'view-' . $maxAutoNumber;
+        } while (isset($idRegistry[$id]));
     }
+
     $idRegistry[$id] = true;
 
     $normalizedViews[] = [
         'id' => $id,
         'name' => $name,
-        'categories' => array_values(array_unique(array_filter(isset($view['categories']) && is_array($view['categories']) ? $view['categories'] : [], 'strlen'))),
-        'sources' => array_values(array_unique(array_filter(isset($view['sources']) && is_array($view['sources']) ? $view['sources'] : [], 'strlen'))),
-        'keywords' => array_values(array_unique(array_filter(isset($view['keywords']) && is_array($view['keywords']) ? $view['keywords'] : [], 'strlen')))
+        'categories' => $normalizeStringList($view['categories'] ?? []),
+        'sources' => $normalizeStringList($view['sources'] ?? []),
+        'keywords' => $normalizeStringList($view['keywords'] ?? [])
     ];
 }
 
 $normalizedConditions = [];
-if (isset($conditions['keywords']) && is_array($conditions['keywords'])) {
-    $normalizedConditions['keywords'] = array_values(array_unique(array_filter($conditions['keywords'], 'strlen')));
-} else {
-    $normalizedConditions['keywords'] = [];
-}
+$normalizedConditions['keywords'] = $normalizeStringList($conditions['keywords'] ?? []);
 
 $payload = [
     'views' => $normalizedViews,
@@ -87,4 +149,8 @@ if ($result === false) {
     exit;
 }
 
-echo json_encode(['status' => 'ok']);
+echo json_encode([
+    'status' => 'ok',
+    'views' => $normalizedViews,
+    'conditions' => $normalizedConditions
+]);

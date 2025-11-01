@@ -107,14 +107,21 @@ function renderViews() {
         const card = document.createElement('section');
         card.className = 'view-card';
         card.dataset.index = String(index);
+        card.dataset.viewId = view.id || '';
+
+        const autoIdPlaceholder = view.id ? '' : '保存時に自動採番されます';
+
         card.innerHTML = `
             <div class="view-card-header">
                 <h3>${escapeHtml(view.name || `ビュー${index + 1}`)}</h3>
-                <button type="button" class="ghost-button danger" data-action="delete-view">削除</button>
+                <div class="view-card-actions">
+                    <span class="view-id-label">ID: ${view.id ? escapeHtml(view.id) : '未割り当て'}</span>
+                    <button type="button" class="ghost-button danger" data-action="delete-view">削除</button>
+                </div>
             </div>
             <div class="form-grid">
                 <label>ビューID
-                    <input type="text" name="view-id" value="${escapeAttribute(view.id)}" placeholder="例: technology">
+                    <input type="text" name="view-id" value="${escapeAttribute(view.id)}" placeholder="${escapeAttribute(autoIdPlaceholder)}" readonly>
                 </label>
                 <label>表示名
                     <input type="text" name="view-name" value="${escapeAttribute(view.name)}" placeholder="例: テクノロジー特集">
@@ -249,8 +256,17 @@ function handleSave() {
             if (!result || result.status !== 'ok') {
                 throw new Error('保存に失敗しました');
             }
-            state.views = views;
-            state.defaultKeywords = defaultKeywords;
+
+            state.views = Array.isArray(result.views)
+                ? result.views.map(normalizeView)
+                : [];
+
+            if (result.conditions && Array.isArray(result.conditions.keywords)) {
+                state.defaultKeywords = result.conditions.keywords.slice();
+            } else {
+                state.defaultKeywords = defaultKeywords;
+            }
+
             renderViews();
             initializeDefaultKeywords();
             status.textContent = '設定を保存しました。';
@@ -275,7 +291,7 @@ function snapshotViews() {
         const keywordsInput = card.querySelector('textarea[name="view-keywords"]');
 
         return normalizeView({
-            id: idInput ? idInput.value : '',
+            id: card.dataset.viewId || (idInput ? idInput.value : ''),
             name: nameInput ? nameInput.value : '',
             categories: Array.from(new Set(collectCheckedValues(card, `input[name="category-${index}"]:checked`))),
             sources: Array.from(new Set(collectCheckedValues(card, `input[name="source-${index}"]:checked`))),
@@ -292,33 +308,34 @@ function collectViewsFromDom() {
 
     for (let index = 0; index < cards.length; index++) {
         const card = cards[index];
-        const idInput = card.querySelector('input[name="view-id"]');
         const nameInput = card.querySelector('input[name="view-name"]');
         const keywordsInput = card.querySelector('textarea[name="view-keywords"]');
 
-        const viewId = idInput ? idInput.value.trim() : '';
+        const viewId = (card.dataset.viewId || '').trim();
         const viewName = nameInput ? nameInput.value.trim() : '';
         const keywords = keywordsInput ? parseKeywords(keywordsInput.value) : [];
         const categories = Array.from(new Set(collectCheckedValues(card, `input[name="category-${index}"]:checked`)));
         const sources = Array.from(new Set(collectCheckedValues(card, `input[name="source-${index}"]:checked`)));
 
-        if (!viewId || !viewName) {
+        if (!viewName) {
             if (status) {
-                status.textContent = 'ビューIDと表示名は必須です。';
+                status.textContent = '表示名は必須です。';
                 status.style.color = '#e53935';
             }
             return null;
         }
 
-        if (ids.has(viewId)) {
+        if (viewId && ids.has(viewId)) {
             if (status) {
-                status.textContent = 'ビューIDが重複しています。別のIDを設定してください。';
+                status.textContent = 'ビューIDが重複しています。最新の情報を読み込んでから再度保存してください。';
                 status.style.color = '#e53935';
             }
             return null;
         }
 
-        ids.add(viewId);
+        if (viewId) {
+            ids.add(viewId);
+        }
 
         views.push({
             id: viewId,
