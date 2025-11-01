@@ -344,7 +344,8 @@ function renderNews() {
         const header = document.createElement('div');
         header.className = 'section-header';
         const categoryLabels = (source.categories || []).join(', ');
-        header.innerHTML = `<h3>${escapeHtml(source.source)}</h3><span>${escapeHtml(categoryLabels)}</span>`;
+        const categoryHtml = categoryLabels ? `<span class="section-categories">${escapeHtml(categoryLabels)}</span>` : '';
+        header.innerHTML = `${categoryHtml}<span class="section-source">${escapeHtml(source.source)}</span>`;
         section.appendChild(header);
 
         const articleWrapper = document.createElement('div');

@@ -279,15 +279,16 @@ button:active {
 
 .section-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.3rem;
 }
 
-.section-header h3 {
-    font-size: 1.1rem;
+.section-categories {
+    font-size: 1rem;
+    font-weight: 600;
 }
 
-.section-header span {
+.section-source {
     color: var(--muted-text);
     font-size: 0.85rem;
 }
