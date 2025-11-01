@@ -366,7 +366,7 @@ function setToggleState(isOpen) {
 
 function renderNews() {
     const container = document.getElementById('news-grid');
-    container.className = 'news-grid column';
+    container.className = 'news-grid';
     container.innerHTML = '';
 
     if (!state.data || !state.data.sources || state.data.sources.length === 0) {
@@ -374,7 +374,14 @@ function renderNews() {
         return;
     }
 
+    let hasSections = false;
+
     state.data.sources.forEach(source => {
+        const items = Array.isArray(source.items) ? source.items.filter(Boolean) : [];
+        if (!items.length) {
+            return;
+        }
+
         const section = document.createElement('section');
         section.className = 'news-section';
         section.draggable = true;
@@ -396,36 +403,34 @@ function renderNews() {
         const articleWrapper = document.createElement('div');
         articleWrapper.className = 'article-wrapper';
 
-        if (source.error) {
-            const error = document.createElement('p');
-            error.textContent = source.error;
-            articleWrapper.appendChild(error);
-        } else if (source.empty) {
-            const emptyMessage = document.createElement('p');
-            emptyMessage.textContent = '現在の条件ではこのサイトの記事は見つかりませんでした。';
-            articleWrapper.appendChild(emptyMessage);
-        } else {
-            source.items.forEach(item => {
-                const card = document.createElement('article');
-                card.className = 'article-card';
-                card.draggable = true;
-                const imageHtml = item.image ? `<figure class="article-image"><img src="${escapeAttribute(item.image)}" alt="${escapeAttribute(item.title || '記事のアイキャッチ画像')}"></figure>` : '';
-                card.innerHTML = `
-                    ${imageHtml}
-                    <div class="article-title">${escapeHtml(item.title)}</div>
-                    <div class="article-meta">${item.published ? `<span>${escapeHtml(item.published)}</span>` : ''}</div>
-                    <div class="article-description">${escapeHtml(item.description)}</div>
-                    <a href="${escapeAttribute(item.link)}" class="article-link" target="_blank" rel="noopener noreferrer">続きを読む</a>
-                `;
-                articleWrapper.appendChild(card);
-                enableCardDrag(card);
-            });
-        }
+        items.forEach(item => {
+            const card = document.createElement('article');
+            card.className = 'article-card';
+            card.draggable = true;
+            const imageHtml = item.image ? `<figure class="article-image"><img src="${escapeAttribute(item.image)}" alt="${escapeAttribute(item.title || '記事のアイキャッチ画像')}"></figure>` : '';
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="article-title">${escapeHtml(item.title)}</div>
+                <div class="article-meta">${item.published ? `<span>${escapeHtml(item.published)}</span>` : ''}</div>
+                <div class="article-description">${escapeHtml(item.description)}</div>
+                <a href="${escapeAttribute(item.link)}" class="article-link" target="_blank" rel="noopener noreferrer">続きを読む</a>
+            `;
+            articleWrapper.appendChild(card);
+            enableCardDrag(card);
+        });
 
         section.appendChild(articleWrapper);
         container.appendChild(section);
         enableSectionDrag(section, container);
+        hasSections = true;
     });
+
+    if (!hasSections) {
+        container.innerHTML = '<p>条件に一致するニュースが見つかりませんでした。</p>';
+        return;
+    }
+
+    container.classList.add('column');
 }
 
 function escapeHtml(value) {
