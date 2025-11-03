@@ -141,7 +141,7 @@ function renderViewList() {
     if (!state.views.length) {
         const empty = document.createElement('p');
         empty.className = 'view-empty';
-        empty.textContent = 'ビューが設定されていません。';
+        empty.textContent = 'ビューがありません。';
         container.appendChild(empty);
         return;
     }

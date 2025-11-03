@@ -351,7 +351,7 @@ function renderViews() {
     if (!state.views.length) {
         const emptyMessage = document.createElement('p');
         emptyMessage.className = 'view-empty';
-        emptyMessage.textContent = 'ビューが登録されていません。「ビューを追加」から作成してください。';
+        emptyMessage.textContent = 'ビューがありません。';
         container.appendChild(emptyMessage);
         return;
     }
