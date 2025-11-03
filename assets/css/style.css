@@ -101,27 +101,26 @@ button:active {
 }
 
 .header-title-link {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    background: var(--accent-color);
-    color: #fff;
+    display: inline-block;
+    padding: 0.15rem 0;
+    color: var(--accent-color);
     text-decoration: none;
     line-height: 1;
     letter-spacing: 0.04em;
     font-weight: 700;
-    box-shadow: 0 10px 24px rgba(38, 84, 255, 0.25);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: color 0.2s ease;
     white-space: nowrap;
 }
 
 .header-title-link:hover,
 .header-title-link:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 14px 28px rgba(38, 84, 255, 0.35);
+    color: #1f4fce;
+    text-decoration: underline;
+}
+
+.header-title-link:focus-visible {
     outline: 3px solid var(--accent-light);
-    outline-offset: 2px;
+    outline-offset: 3px;
 }
 
 
@@ -133,24 +132,36 @@ button:active {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0;
-    background: var(--accent-color);
-    color: #fff;
-    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent-color);
+    border-radius: 12px;
+    border: 1px solid rgba(47, 111, 237, 0.25);
     box-shadow: var(--shadow);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .icon-button svg {
-    width: 1.35rem;
-    height: 1.35rem;
-    fill: currentColor;
+    width: 1.6rem;
+    height: 1.6rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+    background: #fff;
+    box-shadow: 0 14px 28px rgba(38, 84, 255, 0.2);
 }
 
 .icon-button:focus-visible {
     outline: 3px solid var(--accent-light);
-    outline-offset: 2px;
+    outline-offset: 3px;
 }
 
 .panel-quick-links {

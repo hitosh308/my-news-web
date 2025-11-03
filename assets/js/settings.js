@@ -1,3 +1,5 @@
+const STORAGE_KEY = 'my-news-web-settings';
+
 const state = {
     categories: [],
     sources: [],
@@ -7,6 +9,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', () => {
     const config = window.NEWS_CONFIG || {};
+    const stored = loadStoredSettings();
     state.categories = Array.isArray(config.categories)
         ? config.categories
             .filter(category => typeof category === 'string' && category.trim().length > 0)
@@ -32,15 +35,160 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .filter(Boolean)
         : [];
-    state.views = Array.isArray(config.views) ? config.views.map(normalizeView) : [];
-    state.defaultKeywords = (config.conditions && Array.isArray(config.conditions.keywords))
-        ? config.conditions.keywords.slice()
+    const fallbackViews = Array.isArray(config.views)
+        ? config.views
+            .map(normalizeView)
+            .filter(view => view.id && view.name)
         : [];
+    const fallbackKeywords = normalizeKeywordsList(config.conditions ? config.conditions.keywords : []);
+
+    state.views = stored ? stored.views : fallbackViews;
+    state.defaultKeywords = stored ? stored.defaultKeywords : fallbackKeywords;
 
     renderViews();
     initializeDefaultKeywords();
     bindEvents();
 });
+
+function loadStoredSettings() {
+    if (!supportsLocalStorage()) {
+        return null;
+    }
+
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+            return null;
+        }
+
+        const views = Array.isArray(parsed.views)
+            ? parsed.views
+                .map(normalizeView)
+                .filter(view => view.id && view.name)
+            : [];
+        const defaultKeywords = normalizeKeywordsList(parsed.conditions ? parsed.conditions.keywords : []);
+
+        return { views, defaultKeywords };
+    } catch (error) {
+        console.error('設定の読み込みに失敗しました', error);
+        return null;
+    }
+}
+
+function saveSettingsToStorage(views, defaultKeywords) {
+    if (!supportsLocalStorage()) {
+        throw new Error('ローカルストレージが利用できません');
+    }
+
+    const payload = {
+        views: views.map(view => ({
+            id: view.id,
+            name: view.name,
+            categories: Array.isArray(view.categories) ? view.categories.slice() : [],
+            sources: Array.isArray(view.sources) ? view.sources.slice() : [],
+            keywords: Array.isArray(view.keywords) ? view.keywords.slice() : []
+        })),
+        conditions: {
+            keywords: Array.isArray(defaultKeywords) ? defaultKeywords.slice() : []
+        }
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function prepareViewsForStorage(views) {
+    const normalized = [];
+    const usedIds = new Set();
+    let maxAutoNumber = 0;
+
+    const registerId = id => {
+        if (typeof id !== 'string') {
+            return;
+        }
+        const trimmed = id.trim();
+        if (!trimmed) {
+            return;
+        }
+        if (!usedIds.has(trimmed)) {
+            usedIds.add(trimmed);
+        }
+
+        const match = /^view-(\d+)$/i.exec(trimmed);
+        if (match) {
+            const value = Number(match[1]);
+            if (value > maxAutoNumber) {
+                maxAutoNumber = value;
+            }
+        }
+    };
+
+    state.views.forEach(view => {
+        if (!view || typeof view !== 'object') {
+            return;
+        }
+        registerId(view.id);
+    });
+
+    views.forEach(view => {
+        const normalizedView = normalizeView(view);
+        if (!normalizedView.name) {
+            return;
+        }
+
+        if (normalizedView.id) {
+            registerId(normalizedView.id);
+        }
+
+        normalized.push(normalizedView);
+    });
+
+    normalized.forEach(view => {
+        if (view.id) {
+            return;
+        }
+
+        let candidate;
+        do {
+            maxAutoNumber += 1;
+            candidate = `view-${maxAutoNumber}`;
+        } while (usedIds.has(candidate));
+
+        view.id = candidate;
+        usedIds.add(candidate);
+    });
+
+    return normalized;
+}
+
+function normalizeKeywordsList(values) {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+
+    return Array.from(new Set(
+        values
+            .filter(value => typeof value === 'string')
+            .map(value => value.trim())
+            .filter(value => value.length > 0)
+    ));
+}
+
+function supportsLocalStorage() {
+    try {
+        const testKey = '__news_web_storage_test__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (error) {
+        console.warn('ローカルストレージにアクセスできません', error);
+        return false;
+    }
+}
 
 function bindEvents() {
     const addButton = document.getElementById('add-view');
@@ -234,49 +382,24 @@ function handleSave() {
 
     status.textContent = '保存中...';
 
-    fetch('api/settings.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            views,
-            conditions: {
-                keywords: defaultKeywords
-            }
-        })
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('保存に失敗しました');
-            }
-            return response.json();
-        })
-        .then(result => {
-            if (!result || result.status !== 'ok') {
-                throw new Error('保存に失敗しました');
-            }
+    try {
+        const normalizedViews = prepareViewsForStorage(views);
+        const normalizedKeywords = normalizeKeywordsList(defaultKeywords);
+        saveSettingsToStorage(normalizedViews, normalizedKeywords);
 
-            state.views = Array.isArray(result.views)
-                ? result.views.map(normalizeView)
-                : [];
+        state.views = normalizedViews;
+        state.defaultKeywords = normalizedKeywords;
 
-            if (result.conditions && Array.isArray(result.conditions.keywords)) {
-                state.defaultKeywords = result.conditions.keywords.slice();
-            } else {
-                state.defaultKeywords = defaultKeywords;
-            }
+        renderViews();
+        initializeDefaultKeywords();
 
-            renderViews();
-            initializeDefaultKeywords();
-            status.textContent = '設定を保存しました。';
-            status.style.color = '#2f6fed';
-        })
-        .catch(error => {
-            console.error(error);
-            status.textContent = '設定の保存に失敗しました。入力内容を確認してください。';
-            status.style.color = '#e53935';
-        });
+        status.textContent = '設定を保存しました。';
+        status.style.color = '#2f6fed';
+    } catch (error) {
+        console.error(error);
+        status.textContent = '設定の保存に失敗しました。ブラウザの設定を確認してください。';
+        status.style.color = '#e53935';
+    }
 }
 
 function snapshotViews() {

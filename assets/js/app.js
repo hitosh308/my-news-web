@@ -1,3 +1,5 @@
+const STORAGE_KEY = 'my-news-web-settings';
+
 const state = {
     categories: [],
     sources: [],
@@ -5,7 +7,8 @@ const state = {
     selectedCategories: null,
     data: null,
     views: [],
-    activeViewId: null
+    activeViewId: null,
+    defaultKeywords: []
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,22 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function bootstrapConfig() {
     const config = window.NEWS_CONFIG || {};
-    state.categories = config.categories || [];
+    const stored = loadStoredPreferences();
+
+    state.categories = normalizeStringList(config.categories);
     state.sources = (config.sources || []).map(source => ({
         id: source.id,
         name: source.name,
         selected: true
     }));
-    state.views = Array.isArray(config.views) ? config.views : [];
+    state.views = stored && Array.isArray(stored.views) && stored.views.length
+        ? stored.views
+        : sanitizeViews(config.views);
+    state.defaultKeywords = stored && Array.isArray(stored.defaultKeywords)
+        ? stored.defaultKeywords
+        : normalizeStringList(config.conditions ? config.conditions.keywords : []);
 
     if (state.views.length > 0) {
         applyView(state.views[0].id, { suppressRender: true });
     } else {
         state.activeViewId = null;
         state.selectedCategories = null;
-        state.keywords = (config.conditions && Array.isArray(config.conditions.keywords))
-            ? config.conditions.keywords.slice()
-            : [];
+        state.keywords = state.defaultKeywords.slice();
         state.sources.forEach(source => {
             source.selected = true;
         });
@@ -431,6 +439,100 @@ function renderNews() {
     }
 
     container.classList.add('column');
+}
+
+function loadStoredPreferences() {
+    if (!supportsLocalStorage()) {
+        return null;
+    }
+
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+            return null;
+        }
+
+        const views = Array.isArray(parsed.views) ? sanitizeViews(parsed.views) : [];
+        const defaultKeywords = normalizeStringList(parsed.conditions ? parsed.conditions.keywords : []);
+
+        return {
+            views,
+            defaultKeywords
+        };
+    } catch (error) {
+        console.error('設定の読み込みに失敗しました', error);
+        return null;
+    }
+}
+
+function sanitizeViews(views) {
+    if (!Array.isArray(views)) {
+        return [];
+    }
+
+    return views
+        .map(normalizeStoredView)
+        .filter(Boolean);
+}
+
+function normalizeStoredView(view) {
+    if (!view || typeof view !== 'object') {
+        return null;
+    }
+
+    const id = typeof view.id === 'string' ? view.id.trim() : '';
+    const name = typeof view.name === 'string' ? view.name.trim() : '';
+
+    if (!id || !name) {
+        return null;
+    }
+
+    return {
+        id,
+        name,
+        categories: normalizeStringList(view.categories),
+        sources: normalizeStringList(view.sources),
+        keywords: normalizeStringList(view.keywords)
+    };
+}
+
+function normalizeStringList(values) {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+
+    const result = [];
+    values.forEach(value => {
+        if (typeof value !== 'string') {
+            return;
+        }
+
+        const trimmed = value.trim();
+        if (!trimmed || result.includes(trimmed)) {
+            return;
+        }
+
+        result.push(trimmed);
+    });
+
+    return result;
+}
+
+function supportsLocalStorage() {
+    try {
+        const testKey = '__news_web_storage_test__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (error) {
+        console.warn('ローカルストレージにアクセスできません', error);
+        return false;
+    }
 }
 
 function escapeHtml(value) {
