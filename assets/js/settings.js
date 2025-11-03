@@ -1,4 +1,7 @@
 const STORAGE_KEY = 'my-news-web-settings';
+const DB_NAME = 'my-news-web';
+const DB_VERSION = 1;
+const STORE_NAME = 'settings';
 
 const state = {
     categories: [],
@@ -8,8 +11,14 @@ const state = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializeSettingsPage().catch(error => {
+        console.error('設定画面の初期化に失敗しました', error);
+    });
+});
+
+async function initializeSettingsPage() {
     const config = window.NEWS_CONFIG || {};
-    const stored = loadStoredSettings();
+    const stored = await loadStoredSettings();
     state.categories = Array.isArray(config.categories)
         ? config.categories
             .filter(category => typeof category === 'string' && category.trim().length > 0)
@@ -48,41 +57,62 @@ document.addEventListener('DOMContentLoaded', () => {
     renderViews();
     initializeDefaultKeywords();
     bindEvents();
-});
+}
 
-function loadStoredSettings() {
-    if (!supportsLocalStorage()) {
+async function loadStoredSettings() {
+    if (!isIndexedDbAvailable()) {
+        console.warn('IndexedDBが利用できないため、保存済みの設定を読み込めません。');
         return null;
     }
 
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) {
-            return null;
-        }
+        const db = await openSettingsDatabase();
+        return await new Promise(resolve => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(STORAGE_KEY);
 
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') {
-            return null;
-        }
+            request.onsuccess = () => {
+                const raw = request.result;
+                if (!raw || typeof raw !== 'object') {
+                    resolve(null);
+                    return;
+                }
 
-        const views = Array.isArray(parsed.views)
-            ? parsed.views
-                .map(normalizeView)
-                .filter(view => view.id && view.name)
-            : [];
-        const defaultKeywords = normalizeKeywordsList(parsed.conditions ? parsed.conditions.keywords : []);
+                const views = Array.isArray(raw.views)
+                    ? raw.views
+                        .map(normalizeView)
+                        .filter(view => view.id && view.name)
+                    : [];
+                const defaultKeywords = normalizeKeywordsList(raw.conditions ? raw.conditions.keywords : []);
 
-        return { views, defaultKeywords };
+                resolve({ views, defaultKeywords });
+            };
+
+            request.onerror = event => {
+                console.error('設定の読み込みに失敗しました', event.target.error);
+                resolve(null);
+            };
+
+            transaction.oncomplete = () => {
+                db.close();
+            };
+
+            transaction.onabort = () => {
+                console.error('設定の読み込みトランザクションが中断されました', transaction.error);
+                db.close();
+                resolve(null);
+            };
+        });
     } catch (error) {
         console.error('設定の読み込みに失敗しました', error);
         return null;
     }
 }
 
-function saveSettingsToStorage(views, defaultKeywords) {
-    if (!supportsLocalStorage()) {
-        throw new Error('ローカルストレージが利用できません');
+async function saveSettingsToStorage(views, defaultKeywords) {
+    if (!isIndexedDbAvailable()) {
+        throw new Error('IndexedDBが利用できません');
     }
 
     const payload = {
@@ -98,7 +128,28 @@ function saveSettingsToStorage(views, defaultKeywords) {
         }
     };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    const db = await openSettingsDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(payload, STORAGE_KEY);
+
+        request.onerror = event => {
+            reject(event.target.error || new Error('設定の保存に失敗しました'));
+        };
+
+        transaction.oncomplete = () => {
+            db.close();
+            resolve();
+        };
+
+        transaction.onabort = () => {
+            const error = transaction.error || new Error('設定の保存が中断されました');
+            db.close();
+            reject(error);
+        };
+    });
 }
 
 function prepareViewsForStorage(views) {
@@ -178,16 +229,8 @@ function normalizeKeywordsList(values) {
     ));
 }
 
-function supportsLocalStorage() {
-    try {
-        const testKey = '__news_web_storage_test__';
-        localStorage.setItem(testKey, '1');
-        localStorage.removeItem(testKey);
-        return true;
-    } catch (error) {
-        console.warn('ローカルストレージにアクセスできません', error);
-        return false;
-    }
+function isIndexedDbAvailable() {
+    return typeof window !== 'undefined' && 'indexedDB' in window;
 }
 
 function bindEvents() {
@@ -362,7 +405,7 @@ function initializeDefaultKeywords() {
     input.value = state.defaultKeywords.join(', ');
 }
 
-function handleSave() {
+async function handleSave() {
     const status = document.getElementById('settings-status');
     if (!status) {
         return;
@@ -385,7 +428,7 @@ function handleSave() {
     try {
         const normalizedViews = prepareViewsForStorage(views);
         const normalizedKeywords = normalizeKeywordsList(defaultKeywords);
-        saveSettingsToStorage(normalizedViews, normalizedKeywords);
+        await saveSettingsToStorage(normalizedViews, normalizedKeywords);
 
         state.views = normalizedViews;
         state.defaultKeywords = normalizedKeywords;
@@ -400,6 +443,27 @@ function handleSave() {
         status.textContent = '設定の保存に失敗しました。ブラウザの設定を確認してください。';
         status.style.color = '#e53935';
     }
+}
+
+function openSettingsDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = event => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+
+        request.onsuccess = event => {
+            resolve(event.target.result);
+        };
+
+        request.onerror = event => {
+            reject(event.target.error || new Error('IndexedDBを開けませんでした'));
+        };
+    });
 }
 
 function snapshotViews() {
