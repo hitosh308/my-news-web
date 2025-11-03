@@ -33,12 +33,13 @@ $config = [
         <span aria-hidden="true">☰</span>
     </button>
     <h1 class="header-title">
-        <a href="index.php" class="brand-link">
-            <span class="brand-name">My News Web</span>
-            <span class="brand-tagline">複数のニュースサイトから好みのニュースをピックアップ</span>
-        </a>
+        <a href="index.php" class="header-title-link">My News Web</a>
     </h1>
-    <button id="refresh-news" class="primary-button">ニュースを更新</button>
+    <button id="refresh-news" class="icon-button" type="button" aria-label="ニュースを更新">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M17.65 6.35a7.95 7.95 0 0 0-11.3 0 7.95 7.95 0 0 0 0 11.3 7.95 7.95 0 0 0 11.3 0 7.95 7.95 0 0 0 0-11.3zm-1.41 9.9a5.95 5.95 0 1 1 0-8.41l-1.42 1.42H18V6.17l-1.76 1.76z" />
+        </svg>
+    </button>
 </header>
 
 <main class="app-main">

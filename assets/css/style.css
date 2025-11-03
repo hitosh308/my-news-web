@@ -100,41 +100,57 @@ button:active {
     font-size: 1.8rem;
 }
 
-.brand-link {
+.header-title-link {
     display: inline-flex;
-    align-items: baseline;
-    gap: 0.9rem;
-    padding: 0.45rem 1.1rem;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--accent-color), #6b8fff);
+    background: var(--accent-color);
     color: #fff;
     text-decoration: none;
     line-height: 1;
     letter-spacing: 0.04em;
+    font-weight: 700;
     box-shadow: 0 10px 24px rgba(38, 84, 255, 0.25);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     white-space: nowrap;
 }
 
-.brand-link:hover,
-.brand-link:focus {
+.header-title-link:hover,
+.header-title-link:focus-visible {
     transform: translateY(-1px);
     box-shadow: 0 14px 28px rgba(38, 84, 255, 0.35);
-    outline: none;
+    outline: 3px solid var(--accent-light);
+    outline-offset: 2px;
 }
 
-.brand-name {
-    font-weight: 700;
-}
-
-.brand-tagline {
-    font-size: 0.9rem;
-    font-weight: 500;
-    opacity: 0.85;
-}
 
 #refresh-news {
     margin-left: auto;
+}
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    background: var(--accent-color);
+    color: #fff;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+}
+
+.icon-button svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: currentColor;
+}
+
+.icon-button:focus-visible {
+    outline: 3px solid var(--accent-light);
+    outline-offset: 2px;
 }
 
 .panel-quick-links {
@@ -668,16 +684,21 @@ button:active {
     }
 
     .header-title {
-        font-size: 1.55rem;
+        font-size: 1.4rem;
     }
 
-    .brand-link {
-        gap: 0.55rem;
-        padding: 0.35rem 0.8rem;
+    .header-title-link {
+        padding: 0.3rem 0.7rem;
     }
 
-    .brand-tagline {
-        display: none;
+    .icon-button {
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .icon-button svg {
+        width: 1.2rem;
+        height: 1.2rem;
     }
 
     .app-main {
