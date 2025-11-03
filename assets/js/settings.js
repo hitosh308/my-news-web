@@ -2,6 +2,7 @@ const STORAGE_KEY = 'my-news-web-settings';
 const DB_NAME = 'my-news-web';
 const DB_VERSION = 1;
 const STORE_NAME = 'settings';
+const SETTINGS_CHANNEL_NAME = 'my-news-web-settings';
 
 const state = {
     categories: [],
@@ -9,6 +10,8 @@ const state = {
     views: [],
     defaultKeywords: []
 };
+
+let settingsBroadcastChannel = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeSettingsPage().catch(error => {
@@ -233,6 +236,65 @@ function isIndexedDbAvailable() {
     return typeof window !== 'undefined' && 'indexedDB' in window;
 }
 
+function supportsBroadcastChannel() {
+    return typeof window !== 'undefined' && 'BroadcastChannel' in window;
+}
+
+function getSettingsBroadcastChannel() {
+    if (!supportsBroadcastChannel()) {
+        return null;
+    }
+
+    if (!settingsBroadcastChannel) {
+        settingsBroadcastChannel = new BroadcastChannel(SETTINGS_CHANNEL_NAME);
+        window.addEventListener('beforeunload', closeSettingsBroadcastChannel);
+    }
+
+    return settingsBroadcastChannel;
+}
+
+function closeSettingsBroadcastChannel() {
+    if (!settingsBroadcastChannel) {
+        return;
+    }
+
+    try {
+        settingsBroadcastChannel.close();
+    } catch (error) {
+        console.warn('設定同期チャネルのクローズに失敗しました', error);
+    }
+
+    settingsBroadcastChannel = null;
+    window.removeEventListener('beforeunload', closeSettingsBroadcastChannel);
+}
+
+function notifySettingsUpdate(views, defaultKeywords) {
+    const channel = getSettingsBroadcastChannel();
+    if (!channel) {
+        return;
+    }
+
+    try {
+        channel.postMessage({
+            type: 'settings-updated',
+            payload: {
+                views: Array.isArray(views)
+                    ? views.map(view => ({
+                        id: view.id,
+                        name: view.name,
+                        categories: Array.isArray(view.categories) ? view.categories.slice() : [],
+                        sources: Array.isArray(view.sources) ? view.sources.slice() : [],
+                        keywords: Array.isArray(view.keywords) ? view.keywords.slice() : []
+                    }))
+                    : [],
+                defaultKeywords: Array.isArray(defaultKeywords) ? defaultKeywords.slice() : []
+            }
+        });
+    } catch (error) {
+        console.warn('設定更新の通知に失敗しました', error);
+    }
+}
+
 function bindEvents() {
     const addButton = document.getElementById('add-view');
     if (addButton) {
@@ -429,6 +491,7 @@ async function handleSave() {
         const normalizedViews = prepareViewsForStorage(views);
         const normalizedKeywords = normalizeKeywordsList(defaultKeywords);
         await saveSettingsToStorage(normalizedViews, normalizedKeywords);
+        notifySettingsUpdate(normalizedViews, normalizedKeywords);
 
         state.views = normalizedViews;
         state.defaultKeywords = normalizedKeywords;
