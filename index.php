@@ -29,18 +29,16 @@ $config = [
 </head>
 <body>
 <header class="app-header">
-    <div class="header-left">
-        <button id="mobile-menu-toggle" class="secondary-button mobile-menu-button" type="button" aria-label="検索条件を開く" aria-controls="filter-panel" aria-expanded="false" data-filter-toggle data-label-open="検索条件を開く" data-label-close="検索条件を閉じる">
-            <span aria-hidden="true">☰</span>
-        </button>
-        <div class="header-title">
-            <h1><a href="index.php">My News Web</a></h1>
-            <p>複数のニュースサイトから好みのニュースをピックアップ</p>
-        </div>
-    </div>
-    <div class="header-right">
-        <button id="refresh-news" class="primary-button">ニュースを更新</button>
-    </div>
+    <button id="mobile-menu-toggle" class="secondary-button mobile-menu-button" type="button" aria-label="検索条件を開く" aria-controls="filter-panel" aria-expanded="false" data-filter-toggle data-label-open="検索条件を開く" data-label-close="検索条件を閉じる">
+        <span aria-hidden="true">☰</span>
+    </button>
+    <h1 class="header-title">
+        <a href="index.php" class="brand-link">
+            <span class="brand-name">My News Web</span>
+            <span class="brand-tagline">複数のニュースサイトから好みのニュースをピックアップ</span>
+        </a>
+    </h1>
+    <button id="refresh-news" class="primary-button">ニュースを更新</button>
 </header>
 
 <main class="app-main">
