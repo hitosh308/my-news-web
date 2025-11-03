@@ -1,4 +1,7 @@
 const STORAGE_KEY = 'my-news-web-settings';
+const DB_NAME = 'my-news-web';
+const DB_VERSION = 1;
+const STORE_NAME = 'settings';
 
 const state = {
     categories: [],
@@ -12,17 +15,23 @@ const state = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    bootstrapConfig();
+    initializeApp().catch(error => {
+        console.error('アプリの初期化に失敗しました', error);
+    });
+});
+
+async function initializeApp() {
+    await bootstrapConfig();
     bindEvents();
     renderViewList();
     renderFilters();
     renderKeywords();
     loadNews();
-});
+}
 
-function bootstrapConfig() {
+async function bootstrapConfig() {
     const config = window.NEWS_CONFIG || {};
-    const stored = loadStoredPreferences();
+    const stored = await loadStoredPreferences();
 
     state.categories = normalizeStringList(config.categories);
     state.sources = (config.sources || []).map(source => ({
@@ -441,7 +450,16 @@ function renderNews() {
     container.classList.add('column');
 }
 
-function loadStoredPreferences() {
+async function loadStoredPreferences() {
+    const stored = await loadStoredPreferencesFromIndexedDb();
+    if (stored) {
+        return stored;
+    }
+
+    return loadStoredPreferencesFromLocalStorage();
+}
+
+function loadStoredPreferencesFromLocalStorage() {
     if (!supportsLocalStorage()) {
         return null;
     }
@@ -468,6 +486,87 @@ function loadStoredPreferences() {
         console.error('設定の読み込みに失敗しました', error);
         return null;
     }
+}
+
+async function loadStoredPreferencesFromIndexedDb() {
+    if (!isIndexedDbAvailable()) {
+        return null;
+    }
+
+    try {
+        const db = await openSettingsDatabase();
+        return await new Promise(resolve => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(STORAGE_KEY);
+            let closed = false;
+            const safeClose = () => {
+                if (closed) {
+                    return;
+                }
+                closed = true;
+                try {
+                    db.close();
+                } catch (closeError) {
+                    console.warn('IndexedDB接続のクローズに失敗しました', closeError);
+                }
+            };
+
+            request.onsuccess = () => {
+                const raw = request.result;
+                if (!raw || typeof raw !== 'object') {
+                    safeClose();
+                    resolve(null);
+                    return;
+                }
+
+                const views = sanitizeViews(raw.views);
+                const defaultKeywords = normalizeStringList(raw.conditions ? raw.conditions.keywords : []);
+                safeClose();
+                resolve({ views, defaultKeywords });
+            };
+
+            request.onerror = event => {
+                console.error('IndexedDBからの設定の読み込みに失敗しました', event.target.error);
+                safeClose();
+                resolve(null);
+            };
+
+            transaction.oncomplete = () => {
+                safeClose();
+            };
+
+            transaction.onabort = () => {
+                console.error('IndexedDBの読み込みトランザクションが中断されました', transaction.error);
+                safeClose();
+                resolve(null);
+            };
+        });
+    } catch (error) {
+        console.error('IndexedDBから設定を読み込めませんでした', error);
+        return null;
+    }
+}
+
+function openSettingsDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = event => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+
+        request.onsuccess = event => {
+            resolve(event.target.result);
+        };
+
+        request.onerror = event => {
+            reject(event.target.error || new Error('IndexedDBを開けませんでした'));
+        };
+    });
 }
 
 function sanitizeViews(views) {
@@ -521,6 +620,10 @@ function normalizeStringList(values) {
     });
 
     return result;
+}
+
+function isIndexedDbAvailable() {
+    return typeof window !== 'undefined' && 'indexedDB' in window;
 }
 
 function supportsLocalStorage() {
