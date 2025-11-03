@@ -311,6 +311,23 @@ function bindEvents() {
         });
     }
 
+    const deleteAllButton = document.getElementById('delete-all-views');
+    if (deleteAllButton) {
+        deleteAllButton.addEventListener('click', () => {
+            if (!state.views.length) {
+                return;
+            }
+
+            const confirmation = window.confirm('すべてのビューを削除します。よろしいですか？');
+            if (!confirmation) {
+                return;
+            }
+
+            state.views = [];
+            renderViews();
+        });
+    }
+
     const editor = document.getElementById('view-editor');
     if (editor) {
         editor.addEventListener('click', event => {

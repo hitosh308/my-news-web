@@ -47,7 +47,10 @@ $config = [
         <p>表示したいカテゴリ・ニュースサイト・キーワードの組み合わせをビューとして登録できます。</p>
         <div class="view-editor-header">
             <h2>ビュー一覧</h2>
-            <button id="add-view" type="button" class="secondary-button">ビューを追加</button>
+            <div class="view-editor-actions">
+                <button id="add-view" type="button" class="secondary-button">ビューを追加</button>
+                <button id="delete-all-views" type="button" class="ghost-button danger">ビューを全削除</button>
+            </div>
         </div>
         <div id="view-editor" class="view-editor"></div>
         <section class="default-keywords">
