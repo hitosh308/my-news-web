@@ -29,15 +29,16 @@ $config = [
 </head>
 <body>
 <header class="app-header">
-    <div class="header-title">
-        <h1>My News Web</h1>
-        <p>複数のニュースサイトから好みのニュースをピックアップ</p>
-    </div>
-    <div class="header-actions">
+    <div class="header-left">
         <button id="mobile-menu-toggle" class="secondary-button mobile-menu-button" type="button" aria-label="検索条件を開く" aria-controls="filter-panel" aria-expanded="false" data-filter-toggle data-label-open="検索条件を開く" data-label-close="検索条件を閉じる">
             <span aria-hidden="true">☰</span>
         </button>
-        <a href="settings.php" class="ghost-button">設定を編集</a>
+        <div class="header-title">
+            <h1><a href="index.php">My News Web</a></h1>
+            <p>複数のニュースサイトから好みのニュースをピックアップ</p>
+        </div>
+    </div>
+    <div class="header-right">
         <button id="refresh-news" class="primary-button">ニュースを更新</button>
     </div>
 </header>
@@ -45,6 +46,9 @@ $config = [
 <main class="app-main">
     <aside id="filter-panel" class="filter-panel">
         <button type="button" id="close-filters" class="filter-close" aria-label="フィルターを閉じる">閉じる</button>
+        <nav class="panel-quick-links">
+            <a href="settings.php" class="panel-link">設定を編集</a>
+        </nav>
         <section>
             <h2>ビュー</h2>
             <div id="view-list" class="view-list"></div>
