@@ -44,15 +44,15 @@ async function bootstrapConfig() {
         name: source.name,
         selected: true
     }));
-    const storedViews = stored && Array.isArray(stored.views) ? stored.views : null;
+    const storedViews = stored && Array.isArray(stored.views) ? sanitizeViews(stored.views) : null;
     const fallbackViews = sanitizeViews(config.views);
-    const resolvedViews = storedViews && storedViews.length ? storedViews : fallbackViews;
+    const resolvedViews = storedViews !== null ? storedViews : fallbackViews;
     state.views = resolvedViews.map(cloneView);
     const storedDefaultKeywords = stored && Array.isArray(stored.defaultKeywords)
-        ? stored.defaultKeywords
+        ? normalizeStringList(stored.defaultKeywords)
         : null;
     const fallbackDefaultKeywords = normalizeStringList(config.conditions ? config.conditions.keywords : []);
-    const resolvedDefaultKeywords = storedDefaultKeywords || fallbackDefaultKeywords;
+    const resolvedDefaultKeywords = storedDefaultKeywords !== null ? storedDefaultKeywords : fallbackDefaultKeywords;
     state.defaultKeywords = resolvedDefaultKeywords.slice();
 
     if (state.views.length > 0) {
