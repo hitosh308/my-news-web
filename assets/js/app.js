@@ -2,6 +2,7 @@ const STORAGE_KEY = 'my-news-web-settings';
 const DB_NAME = 'my-news-web';
 const DB_VERSION = 1;
 const STORE_NAME = 'settings';
+const SETTINGS_CHANNEL_NAME = 'my-news-web-settings';
 
 const state = {
     categories: [],
@@ -14,6 +15,9 @@ const state = {
     defaultKeywords: []
 };
 
+let settingsBroadcastChannel = null;
+let refreshViewsTask = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp().catch(error => {
         console.error('アプリの初期化に失敗しました', error);
@@ -22,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initializeApp() {
     await bootstrapConfig();
+    initializeSettingsSync();
     bindEvents();
     renderViewList();
     renderFilters();
@@ -39,23 +44,58 @@ async function bootstrapConfig() {
         name: source.name,
         selected: true
     }));
-    state.views = stored && Array.isArray(stored.views) && stored.views.length
-        ? stored.views
-        : sanitizeViews(config.views);
-    state.defaultKeywords = stored && Array.isArray(stored.defaultKeywords)
+    const storedViews = stored && Array.isArray(stored.views) ? stored.views : null;
+    const fallbackViews = sanitizeViews(config.views);
+    const resolvedViews = storedViews && storedViews.length ? storedViews : fallbackViews;
+    state.views = resolvedViews.map(cloneView);
+    const storedDefaultKeywords = stored && Array.isArray(stored.defaultKeywords)
         ? stored.defaultKeywords
-        : normalizeStringList(config.conditions ? config.conditions.keywords : []);
+        : null;
+    const fallbackDefaultKeywords = normalizeStringList(config.conditions ? config.conditions.keywords : []);
+    const resolvedDefaultKeywords = storedDefaultKeywords || fallbackDefaultKeywords;
+    state.defaultKeywords = resolvedDefaultKeywords.slice();
 
     if (state.views.length > 0) {
         applyView(state.views[0].id, { suppressRender: true });
     } else {
-        state.activeViewId = null;
-        state.selectedCategories = null;
-        state.keywords = state.defaultKeywords.slice();
-        state.sources.forEach(source => {
-            source.selected = true;
-        });
+        resetFiltersToDefaults();
     }
+}
+
+function initializeSettingsSync() {
+    if (supportsBroadcastChannel()) {
+        settingsBroadcastChannel = new BroadcastChannel(SETTINGS_CHANNEL_NAME);
+        settingsBroadcastChannel.addEventListener('message', event => {
+            if (!event || !event.data) {
+                return;
+            }
+
+            const { type, payload } = event.data;
+            if (type !== 'settings-updated' || !payload) {
+                return;
+            }
+
+            handleSettingsUpdatePayload(payload);
+        });
+
+        window.addEventListener('beforeunload', closeSettingsBroadcastChannel);
+        return;
+    }
+
+    if (!isIndexedDbAvailable()) {
+        return;
+    }
+
+    const scheduleRefresh = () => {
+        refreshViewsFromIndexedDb();
+    };
+
+    window.addEventListener('focus', scheduleRefresh);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            scheduleRefresh();
+        }
+    });
 }
 
 function bindEvents() {
@@ -144,6 +184,58 @@ function applyView(viewId, options = {}) {
         renderKeywords();
         loadNews();
     }
+}
+
+function handleSettingsUpdatePayload(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return;
+    }
+
+    const incomingViews = sanitizeViews(payload.views);
+    const incomingDefaultKeywords = normalizeStringList(payload.defaultKeywords);
+    const viewsChanged = !areViewListsEqual(state.views, incomingViews);
+    const defaultKeywordsChanged = !areStringArraysEqual(state.defaultKeywords, incomingDefaultKeywords);
+
+    if (!viewsChanged && !defaultKeywordsChanged) {
+        return;
+    }
+
+    state.views = incomingViews.map(cloneView);
+    state.defaultKeywords = incomingDefaultKeywords.slice();
+
+    if (!state.views.length) {
+        resetFiltersToDefaults();
+        renderViewList();
+        renderFilters();
+        renderKeywords();
+        loadNews();
+        return;
+    }
+
+    const activeViewExists = state.activeViewId && state.views.some(view => view.id === state.activeViewId);
+    const targetViewId = activeViewExists ? state.activeViewId : state.views[0].id;
+    applyView(targetViewId);
+}
+
+function refreshViewsFromIndexedDb() {
+    if (refreshViewsTask || !isIndexedDbAvailable()) {
+        return refreshViewsTask;
+    }
+
+    refreshViewsTask = loadStoredPreferencesFromIndexedDb()
+        .then(stored => {
+            if (stored) {
+                handleSettingsUpdatePayload(stored);
+            }
+        })
+        .catch(error => {
+            console.error('IndexedDBからビュー設定を再読み込みできませんでした', error);
+        })
+        .finally(() => {
+            refreshViewsTask = null;
+        });
+
+    return refreshViewsTask;
 }
 
 function renderFilters() {
@@ -622,8 +714,74 @@ function normalizeStringList(values) {
     return result;
 }
 
+function areStringArraysEqual(left, right) {
+    const a = Array.isArray(left) ? left : [];
+    const b = Array.isArray(right) ? right : [];
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let index = 0; index < a.length; index++) {
+        if (a[index] !== b[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function areViewListsEqual(left, right) {
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return false;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let index = 0; index < left.length; index++) {
+        const current = left[index];
+        const incoming = right[index];
+        if (!current || !incoming) {
+            return false;
+        }
+        if (current.id !== incoming.id || current.name !== incoming.name) {
+            return false;
+        }
+        if (!areStringArraysEqual(current.categories, incoming.categories)) {
+            return false;
+        }
+        if (!areStringArraysEqual(current.sources, incoming.sources)) {
+            return false;
+        }
+        if (!areStringArraysEqual(current.keywords, incoming.keywords)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function cloneView(view) {
+    return {
+        id: view.id,
+        name: view.name,
+        categories: Array.isArray(view.categories) ? view.categories.slice() : [],
+        sources: Array.isArray(view.sources) ? view.sources.slice() : [],
+        keywords: Array.isArray(view.keywords) ? view.keywords.slice() : []
+    };
+}
+
+function resetFiltersToDefaults() {
+    state.activeViewId = null;
+    state.selectedCategories = null;
+    state.keywords = state.defaultKeywords.slice();
+    state.sources.forEach(source => {
+        source.selected = true;
+    });
+}
+
 function isIndexedDbAvailable() {
     return typeof window !== 'undefined' && 'indexedDB' in window;
+}
+
+function supportsBroadcastChannel() {
+    return typeof window !== 'undefined' && 'BroadcastChannel' in window;
 }
 
 function supportsLocalStorage() {
@@ -636,6 +794,21 @@ function supportsLocalStorage() {
         console.warn('ローカルストレージにアクセスできません', error);
         return false;
     }
+}
+
+function closeSettingsBroadcastChannel() {
+    if (!settingsBroadcastChannel) {
+        return;
+    }
+
+    try {
+        settingsBroadcastChannel.close();
+    } catch (error) {
+        console.warn('設定同期チャネルのクローズに失敗しました', error);
+    }
+
+    settingsBroadcastChannel = null;
+    window.removeEventListener('beforeunload', closeSettingsBroadcastChannel);
 }
 
 function escapeHtml(value) {
