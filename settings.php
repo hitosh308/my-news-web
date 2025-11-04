@@ -19,8 +19,7 @@ if (file_exists($viewConfigPath)) {
 $config = [
     'categories' => $sourcesConfig['categories'] ?? [],
     'sources' => $sourcesConfig['sources'] ?? [],
-    'views' => $viewsConfig['views'] ?? [],
-    'conditions' => $viewsConfig['conditions'] ?? ['keywords' => []]
+    'views' => $viewsConfig['views'] ?? []
 ];
 ?>
 <!DOCTYPE html>
@@ -53,11 +52,6 @@ $config = [
             </div>
         </div>
         <div id="view-editor" class="view-editor"></div>
-        <section class="default-keywords">
-            <h2>共通のキーワード</h2>
-            <p>どのビューにも含めたいキーワードがあればカンマ区切りで入力してください。</p>
-            <input type="text" id="default-keywords" placeholder="例: AI, 経済">
-        </section>
         <div class="settings-actions">
             <button id="save-settings" class="primary-button">保存する</button>
         </div>

@@ -14,20 +14,14 @@ if (!file_exists($configPath)) {
 
 $existingConfig = json_decode((string)file_get_contents($configPath), true);
 if (!is_array($existingConfig)) {
-    $existingConfig = ['views' => [], 'conditions' => ['keywords' => []]];
+    $existingConfig = ['views' => []];
 }
 if (!isset($existingConfig['views']) || !is_array($existingConfig['views'])) {
     $existingConfig['views'] = [];
 }
-if (!isset($existingConfig['conditions']) || !is_array($existingConfig['conditions'])) {
-    $existingConfig['conditions'] = ['keywords' => []];
-}
-if (!isset($existingConfig['conditions']['keywords']) || !is_array($existingConfig['conditions']['keywords'])) {
-    $existingConfig['conditions']['keywords'] = [];
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo json_encode($existingConfig, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    echo json_encode(['views' => $existingConfig['views']], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -49,11 +43,6 @@ if (!is_array($views)) {
     http_response_code(400);
     echo json_encode(['error' => 'ビューの形式が不正です。']);
     exit;
-}
-
-$conditions = $input['conditions'] ?? [];
-if (!is_array($conditions)) {
-    $conditions = [];
 }
 
 $normalizedViews = [];
@@ -137,12 +126,8 @@ foreach ($views as $view) {
     ];
 }
 
-$normalizedConditions = [];
-$normalizedConditions['keywords'] = $normalizeStringList($conditions['keywords'] ?? []);
-
 $payload = [
-    'views' => $normalizedViews,
-    'conditions' => $normalizedConditions
+    'views' => $normalizedViews
 ];
 
 $result = file_put_contents($configPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -154,6 +139,5 @@ if ($result === false) {
 
 echo json_encode([
     'status' => 'ok',
-    'views' => $normalizedViews,
-    'conditions' => $normalizedConditions
+    'views' => $normalizedViews
 ]);

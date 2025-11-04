@@ -11,8 +11,7 @@ const state = {
     selectedCategories: null,
     data: null,
     views: [],
-    activeViewId: null,
-    defaultKeywords: []
+    activeViewId: null
 };
 
 let settingsBroadcastChannel = null;
@@ -48,12 +47,6 @@ async function bootstrapConfig() {
     const fallbackViews = sanitizeViews(config.views);
     const resolvedViews = storedViews !== null ? storedViews : fallbackViews;
     state.views = resolvedViews.map(cloneView);
-    const storedDefaultKeywords = stored && Array.isArray(stored.defaultKeywords)
-        ? normalizeStringList(stored.defaultKeywords)
-        : null;
-    const fallbackDefaultKeywords = normalizeStringList(config.conditions ? config.conditions.keywords : []);
-    const resolvedDefaultKeywords = storedDefaultKeywords !== null ? storedDefaultKeywords : fallbackDefaultKeywords;
-    state.defaultKeywords = resolvedDefaultKeywords.slice();
 
     if (state.views.length > 0) {
         applyView(state.views[0].id, { suppressRender: true });
@@ -192,16 +185,13 @@ function handleSettingsUpdatePayload(payload) {
     }
 
     const incomingViews = sanitizeViews(payload.views);
-    const incomingDefaultKeywords = normalizeStringList(payload.defaultKeywords);
     const viewsChanged = !areViewListsEqual(state.views, incomingViews);
-    const defaultKeywordsChanged = !areStringArraysEqual(state.defaultKeywords, incomingDefaultKeywords);
 
-    if (!viewsChanged && !defaultKeywordsChanged) {
+    if (!viewsChanged) {
         return;
     }
 
     state.views = incomingViews.map(cloneView);
-    state.defaultKeywords = incomingDefaultKeywords.slice();
 
     if (!state.views.length) {
         resetFiltersToDefaults();
@@ -568,11 +558,9 @@ function loadStoredPreferencesFromLocalStorage() {
         }
 
         const views = Array.isArray(parsed.views) ? sanitizeViews(parsed.views) : [];
-        const defaultKeywords = normalizeStringList(parsed.conditions ? parsed.conditions.keywords : []);
 
         return {
-            views,
-            defaultKeywords
+            views
         };
     } catch (error) {
         console.error('設定の読み込みに失敗しました', error);
@@ -613,9 +601,8 @@ async function loadStoredPreferencesFromIndexedDb() {
                 }
 
                 const views = sanitizeViews(raw.views);
-                const defaultKeywords = normalizeStringList(raw.conditions ? raw.conditions.keywords : []);
                 safeClose();
-                resolve({ views, defaultKeywords });
+                resolve({ views });
             };
 
             request.onerror = event => {
@@ -770,7 +757,7 @@ function cloneView(view) {
 function resetFiltersToDefaults() {
     state.activeViewId = null;
     state.selectedCategories = null;
-    state.keywords = state.defaultKeywords.slice();
+    state.keywords = [];
     state.sources.forEach(source => {
         source.selected = true;
     });

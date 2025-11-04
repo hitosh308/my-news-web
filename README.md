@@ -29,9 +29,6 @@ php -S 0.0.0.0:8080
 ```json
 {
   "categories": ["テクノロジー", "ビジネス"],
-  "conditions": {
-    "keywords": ["AI", "スタートアップ"]
-  },
   "sources": [
     {
       "id": "nhk",
@@ -46,7 +43,6 @@ php -S 0.0.0.0:8080
 ```
 
 - `categories`: UIで選択できるカテゴリ一覧。
-- `conditions.keywords`: 初期状態で有効なキーワード。
 - `sources`: ニュース取得元。
   - `type` は現状 `rss` のみ対応。
   - `defaultCategories` はそのサイトが属するカテゴリ。

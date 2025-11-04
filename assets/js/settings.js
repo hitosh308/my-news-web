@@ -7,8 +7,7 @@ const SETTINGS_CHANNEL_NAME = 'my-news-web-settings';
 const state = {
     categories: [],
     sources: [],
-    views: [],
-    defaultKeywords: []
+    views: []
 };
 
 let settingsBroadcastChannel = null;
@@ -52,13 +51,10 @@ async function initializeSettingsPage() {
             .map(normalizeView)
             .filter(view => view.id && view.name)
         : [];
-    const fallbackKeywords = normalizeKeywordsList(config.conditions ? config.conditions.keywords : []);
 
-    state.views = stored ? stored.views : fallbackViews;
-    state.defaultKeywords = stored ? stored.defaultKeywords : fallbackKeywords;
+    state.views = stored && Array.isArray(stored.views) ? stored.views : fallbackViews;
 
     renderViews();
-    initializeDefaultKeywords();
     bindEvents();
 }
 
@@ -87,9 +83,8 @@ async function loadStoredSettings() {
                         .map(normalizeView)
                         .filter(view => view.id && view.name)
                     : [];
-                const defaultKeywords = normalizeKeywordsList(raw.conditions ? raw.conditions.keywords : []);
 
-                resolve({ views, defaultKeywords });
+                resolve({ views });
             };
 
             request.onerror = event => {
@@ -113,7 +108,7 @@ async function loadStoredSettings() {
     }
 }
 
-async function saveSettingsToStorage(views, defaultKeywords) {
+async function saveSettingsToStorage(views) {
     if (!isIndexedDbAvailable()) {
         throw new Error('IndexedDBが利用できません');
     }
@@ -125,10 +120,7 @@ async function saveSettingsToStorage(views, defaultKeywords) {
             categories: Array.isArray(view.categories) ? view.categories.slice() : [],
             sources: Array.isArray(view.sources) ? view.sources.slice() : [],
             keywords: Array.isArray(view.keywords) ? view.keywords.slice() : []
-        })),
-        conditions: {
-            keywords: Array.isArray(defaultKeywords) ? defaultKeywords.slice() : []
-        }
+        }))
     };
 
     const db = await openSettingsDatabase();
@@ -219,19 +211,6 @@ function prepareViewsForStorage(views) {
     return normalized;
 }
 
-function normalizeKeywordsList(values) {
-    if (!Array.isArray(values)) {
-        return [];
-    }
-
-    return Array.from(new Set(
-        values
-            .filter(value => typeof value === 'string')
-            .map(value => value.trim())
-            .filter(value => value.length > 0)
-    ));
-}
-
 function isIndexedDbAvailable() {
     return typeof window !== 'undefined' && 'indexedDB' in window;
 }
@@ -268,7 +247,7 @@ function closeSettingsBroadcastChannel() {
     window.removeEventListener('beforeunload', closeSettingsBroadcastChannel);
 }
 
-function notifySettingsUpdate(views, defaultKeywords) {
+function notifySettingsUpdate(views) {
     const channel = getSettingsBroadcastChannel();
     if (!channel) {
         return;
@@ -286,8 +265,7 @@ function notifySettingsUpdate(views, defaultKeywords) {
                         sources: Array.isArray(view.sources) ? view.sources.slice() : [],
                         keywords: Array.isArray(view.keywords) ? view.keywords.slice() : []
                     }))
-                    : [],
-                defaultKeywords: Array.isArray(defaultKeywords) ? defaultKeywords.slice() : []
+                    : []
             }
         });
     } catch (error) {
@@ -475,15 +453,6 @@ function renderSourceCheckboxes(viewIndex, selected = []) {
     }).join('');
 }
 
-function initializeDefaultKeywords() {
-    const input = document.getElementById('default-keywords');
-    if (!input) {
-        return;
-    }
-
-    input.value = state.defaultKeywords.join(', ');
-}
-
 async function handleSave() {
     const status = document.getElementById('settings-status');
     if (!status) {
@@ -499,22 +468,16 @@ async function handleSave() {
         return;
     }
 
-    const defaultKeywordsInput = document.getElementById('default-keywords');
-    const defaultKeywords = parseKeywords(defaultKeywordsInput ? defaultKeywordsInput.value : '');
-
     status.textContent = '保存中...';
 
     try {
         const normalizedViews = prepareViewsForStorage(views);
-        const normalizedKeywords = normalizeKeywordsList(defaultKeywords);
-        await saveSettingsToStorage(normalizedViews, normalizedKeywords);
-        notifySettingsUpdate(normalizedViews, normalizedKeywords);
+        await saveSettingsToStorage(normalizedViews);
+        notifySettingsUpdate(normalizedViews);
 
         state.views = normalizedViews;
-        state.defaultKeywords = normalizedKeywords;
 
         renderViews();
-        initializeDefaultKeywords();
 
         status.textContent = '設定を保存しました。';
         status.style.color = '#2f6fed';
