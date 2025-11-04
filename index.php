@@ -19,8 +19,7 @@ if (file_exists($viewConfigPath)) {
 $config = [
     'categories' => $sourcesConfig['categories'] ?? [],
     'sources' => $sourcesConfig['sources'] ?? [],
-    'views' => $viewsConfig['views'] ?? [],
-    'conditions' => $viewsConfig['conditions'] ?? ['keywords' => []]
+    'views' => $viewsConfig['views'] ?? []
 ];
 ?>
 <!DOCTYPE html>

@@ -559,9 +559,7 @@ button:active {
 }
 
 .form-grid input[type="text"],
-.view-field-group textarea,
-.default-keywords input[type="text"],
-#default-keywords {
+.view-field-group textarea {
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 0.6rem 0.75rem;
@@ -620,22 +618,6 @@ button:active {
 .view-field-group textarea {
     resize: vertical;
     min-height: 80px;
-}
-
-.default-keywords {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
-
-.default-keywords h2 {
-    margin: 0;
-}
-
-.default-keywords p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--muted-text);
 }
 
 .settings-status {
