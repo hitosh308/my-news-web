@@ -62,7 +62,10 @@ $config = [
     <div id="filter-backdrop" class="filter-backdrop" hidden></div>
     <section class="news-area">
         <div class="news-toolbar">
-            <button type="button" id="toggle-filters" class="secondary-button filter-toggle" aria-expanded="false" aria-controls="filter-panel" data-filter-toggle>フィルター</button>
+            <div class="view-dropdown" data-view-dropdown>
+                <button type="button" id="toggle-filters" class="secondary-button filter-toggle" aria-expanded="false" aria-controls="filter-panel" aria-haspopup="true" data-filter-toggle data-view-dropdown-toggle>フィルター</button>
+                <div id="view-dropdown-menu" class="view-dropdown-menu" role="menu" hidden data-view-dropdown-menu></div>
+            </div>
             <span id="status-text">ニュースを読み込んでください</span>
         </div>
         <div id="news-grid" class="news-grid" aria-live="polite"></div>
