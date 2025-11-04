@@ -16,6 +16,11 @@ const state = {
 
 let settingsBroadcastChannel = null;
 let refreshViewsTask = null;
+const viewDropdownElements = {
+    container: null,
+    toggle: null,
+    menu: null
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp().catch(error => {
@@ -121,36 +126,72 @@ function bindEvents() {
     }
 
     initializeFilterPanel();
+    initializeViewDropdown();
 }
 
 function renderViewList() {
     const container = document.getElementById('view-list');
-    if (!container) {
+    if (container) {
+        container.innerHTML = '';
+
+        if (!state.views.length) {
+            const empty = document.createElement('p');
+            empty.className = 'view-empty';
+            empty.textContent = 'ビューが設定されていません。';
+            container.appendChild(empty);
+        } else {
+            state.views.forEach(view => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `view-button${state.activeViewId === view.id ? ' active' : ''}`;
+                button.textContent = view.name || view.id;
+                button.addEventListener('click', () => {
+                    if (state.activeViewId === view.id) {
+                        closeViewDropdown();
+                        return;
+                    }
+                    applyView(view.id);
+                });
+                container.appendChild(button);
+            });
+        }
+    }
+
+    renderViewDropdownMenu();
+}
+
+function renderViewDropdownMenu() {
+    const { container, menu, toggle } = viewDropdownElements;
+    if (!container || !menu || !toggle) {
         return;
     }
 
-    container.innerHTML = '';
+    menu.innerHTML = '';
 
     if (!state.views.length) {
-        const empty = document.createElement('p');
-        empty.className = 'view-empty';
+        const empty = document.createElement('div');
+        empty.className = 'view-dropdown-empty';
         empty.textContent = 'ビューが設定されていません。';
-        container.appendChild(empty);
+        menu.appendChild(empty);
+        closeViewDropdown();
         return;
     }
 
     state.views.forEach(view => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `view-button${state.activeViewId === view.id ? ' active' : ''}`;
-        button.textContent = view.name || view.id;
-        button.addEventListener('click', () => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = `view-dropdown-item${state.activeViewId === view.id ? ' active' : ''}`;
+        item.dataset.viewId = view.id;
+        item.setAttribute('role', 'menuitem');
+        item.textContent = view.name || view.id;
+        item.addEventListener('click', () => {
             if (state.activeViewId === view.id) {
+                closeViewDropdown();
                 return;
             }
             applyView(view.id);
         });
-        container.appendChild(button);
+        menu.appendChild(item);
     });
 }
 
@@ -160,6 +201,7 @@ function applyView(viewId, options = {}) {
         return;
     }
 
+    closeViewDropdown();
     state.activeViewId = viewId;
     state.keywords = Array.isArray(view.keywords) ? view.keywords.slice() : [];
     const categories = Array.isArray(view.categories) ? view.categories.filter(Boolean) : [];
@@ -371,6 +413,10 @@ function initializeFilterPanel() {
 
     toggleButtons.forEach(button => {
         button.addEventListener('click', () => {
+            if (!isMobileLayout()) {
+                return;
+            }
+
             if (document.body.classList.contains('filters-open')) {
                 closeFilters();
             } else {
@@ -388,14 +434,19 @@ function initializeFilterPanel() {
     }
 
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && document.body.classList.contains('filters-open')) {
-            closeFilters();
+        if (event.key === 'Escape') {
+            if (document.body.classList.contains('filters-open')) {
+                closeFilters();
+                return;
+            }
+            closeViewDropdown();
         }
     });
 
     const wideScreenQuery = window.matchMedia('(min-width: 961px)');
     const handleQueryChange = () => {
         closeFilters();
+        closeViewDropdown();
     };
 
     if (typeof wideScreenQuery.addEventListener === 'function') {
@@ -405,6 +456,71 @@ function initializeFilterPanel() {
     }
 
     closeFilters();
+    closeViewDropdown();
+}
+
+function initializeViewDropdown() {
+    const container = document.querySelector('[data-view-dropdown]');
+    const toggle = container ? container.querySelector('[data-view-dropdown-toggle]') : null;
+    const menu = container ? container.querySelector('[data-view-dropdown-menu]') : null;
+
+    viewDropdownElements.container = container || null;
+    viewDropdownElements.toggle = toggle || null;
+    viewDropdownElements.menu = menu || null;
+
+    if (!container || !toggle || !menu) {
+        return;
+    }
+
+    const handleToggleClick = (event) => {
+        if (isMobileLayout()) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (isViewDropdownOpen()) {
+            closeViewDropdown();
+        } else {
+            openViewDropdown({ focusFirstItem: event.detail === 0 });
+        }
+    };
+
+    toggle.addEventListener('click', handleToggleClick);
+
+    toggle.addEventListener('keydown', event => {
+        if (isMobileLayout()) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            openViewDropdown({ focusFirstItem: true });
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            closeViewDropdown();
+        }
+    });
+
+    menu.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeViewDropdown();
+            toggle.focus();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!container.contains(event.target)) {
+            closeViewDropdown();
+        }
+    });
+
+    document.addEventListener('focusin', event => {
+        if (!container.contains(event.target)) {
+            closeViewDropdown();
+        }
+    });
 }
 
 function openFilters() {
@@ -412,6 +528,7 @@ function openFilters() {
         return;
     }
 
+    closeViewDropdown();
     document.body.classList.add('filters-open');
     const filterPanel = document.getElementById('filter-panel');
     const filterBackdrop = document.getElementById('filter-backdrop');
@@ -432,6 +549,7 @@ function closeFilters() {
     const filterPanel = document.getElementById('filter-panel');
     const filterBackdrop = document.getElementById('filter-backdrop');
 
+    closeViewDropdown();
     if (filterBackdrop) {
         filterBackdrop.hidden = true;
     }
@@ -451,6 +569,15 @@ function isMobileLayout() {
     return window.matchMedia('(max-width: 960px)').matches;
 }
 
+function isViewDropdownOpen() {
+    const { container, menu } = viewDropdownElements;
+    if (!container || !menu) {
+        return false;
+    }
+
+    return container.classList.contains('open') && !menu.hidden;
+}
+
 function setToggleState(isOpen) {
     const toggleButtons = document.querySelectorAll('[data-filter-toggle]');
     toggleButtons.forEach(button => {
@@ -461,6 +588,43 @@ function setToggleState(isOpen) {
             button.setAttribute('aria-label', isOpen ? labelClose : labelOpen);
         }
     });
+}
+
+function openViewDropdown(options = {}) {
+    const { container, menu, toggle } = viewDropdownElements;
+    if (!container || !menu || !toggle) {
+        return;
+    }
+
+    if (!state.views.length) {
+        return;
+    }
+
+    container.classList.add('open');
+    menu.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+
+    if (options.focusFirstItem) {
+        requestAnimationFrame(() => {
+            const firstItem = menu.querySelector('.view-dropdown-item');
+            if (firstItem) {
+                firstItem.focus();
+            }
+        });
+    }
+}
+
+function closeViewDropdown() {
+    const { container, menu, toggle } = viewDropdownElements;
+    if (!container || !menu || !toggle) {
+        return;
+    }
+
+    container.classList.remove('open');
+    menu.hidden = true;
+
+    const shouldRemainExpanded = isMobileLayout() && document.body.classList.contains('filters-open');
+    toggle.setAttribute('aria-expanded', shouldRemainExpanded ? 'true' : 'false');
 }
 
 function renderNews() {
